@@ -156,6 +156,29 @@ html,body{height:100%;background:var(--bg);font-family:var(--font-body);color:va
 .pc-action:hover{background:var(--surface);border-color:var(--border2)}
 .pc-action.danger{color:var(--red);background:var(--red-pale);border-color:#FCA5A5}
 .pc-action.danger:hover{background:#FEE2E2}
+.lot-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px;box-shadow:var(--shadow)}
+.lot-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.lot-title{font-size:15px;font-weight:700;font-family:var(--font-head);color:var(--text)}
+.lot-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.lot-badge{font-size:12px;font-weight:700;border-radius:var(--r-full);padding:4px 10px;background:var(--green-pale);color:var(--green-d);white-space:nowrap}
+.lot-bar{height:10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-full);overflow:hidden;margin-bottom:8px}
+.lot-fill{height:100%;background:var(--green);border-radius:var(--r-full);transition:.2s}
+.lot-info{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--text2)}
+.lot-actions{display:flex;gap:8px;margin-top:12px}
+.lot-actions button{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface2);color:var(--text2);font-weight:700;cursor:pointer}
+.lot-actions button:not(:disabled){background:var(--green);color:#0F172A;border-color:var(--green)}
+.lot-actions button:disabled{opacity:.55;cursor:not-allowed}
+.order-line{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
+.order-main{min-width:0}
+.order-name{font-size:15px;font-weight:700;font-family:var(--font-head);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.order-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.order-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
+.order-actions .action-btn{padding:6px 10px}
+.pedido-details{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.pedido-card.open .pedido-details{display:block}
+.calc-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 12px;margin-bottom:1rem}
+.calc-line{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--text2);margin-bottom:4px}
+.calc-line strong{color:var(--text);font-family:var(--font-head)}
 
 /* ── ALERT BADGE ── */
 .alert-badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:#92400E;background:#FEF3C7;border:1px solid #FCD34D;border-radius:var(--r-full);padding:4px 10px}
@@ -330,6 +353,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--font-body);color:va
     <!-- PEDIDOS -->
     <div id="tc-pedidos">
       <div id="notif-strip"></div>
+      <div id="lote-panel"></div>
       <div class="stats-grid" id="stats-row"></div>
       <button class="fab" onclick="openModal()"><i class="ti ti-plus"></i> Novo Pedido</button>
       <div class="chips">
@@ -391,8 +415,13 @@ html,body{height:100%;background:var(--bg);font-family:var(--font-body);color:va
     <div class="modal-title" id="modal-title">Novo pedido</div>
     <div class="mfield"><label>Nome do cliente</label><input type="text" id="m-nome" placeholder="Ex: Mariana Silva"></div>
     <div class="m-row">
-      <div class="mfield"><label>Quantidade (dz)</label><input type="number" id="m-qtd" placeholder="0" min="1"></div>
-      <div class="mfield"><label>Valor (R$)</label><input type="number" id="m-val" placeholder="0,00" step="0.50"></div>
+      <div class="mfield"><label>Quantidade (dz)</label><input type="number" id="m-qtd" placeholder="0" min="1" oninput="updatePedidoTotal()"></div>
+      <div class="mfield"><label>Desconto (R$)</label><input type="number" id="m-desc" placeholder="0,00" min="0" step="0.50" oninput="updatePedidoTotal()"></div>
+    </div>
+    <div class="calc-box">
+      <div class="calc-line"><span>Valor padrão da dúzia</span><strong>R$ 25,00</strong></div>
+      <div class="calc-line"><span>Total do pedido</span><strong id="m-total-preview">R$ 0,00</strong></div>
+      <div class="calc-line"><span>Lote em uso</span><strong id="m-lote-preview">Sem lote ativo</strong></div>
     </div>
     <div class="m-row">
       <div class="mfield"><label>Forma de pagamento</label>
@@ -408,6 +437,21 @@ html,body{height:100%;background:var(--bg);font-family:var(--font-body);color:va
     <div class="m-btns">
       <button class="m-cancel" onclick="closeModal('modal-pedido')">Cancelar</button>
       <button class="m-save" onclick="salvarPedido()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL LOTE -->
+<div class="modal-overlay" id="modal-lote">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Novo lote</div>
+    <div class="mfield"><label>Data do lote</label><input type="date" id="lote-data"></div>
+    <div class="mfield"><label>Quantidade em dúzias</label><input type="number" id="lote-qtd" min="1" placeholder="Ex: 80"></div>
+    <div class="mfield"><label>Observação</label><textarea id="lote-obs" placeholder="Ex: lote recebido pela manhã"></textarea></div>
+    <div class="m-btns">
+      <button class="m-cancel" onclick="closeModal('modal-lote')">Cancelar</button>
+      <button class="m-save" onclick="salvarLote()">Salvar lote</button>
     </div>
   </div>
 </div>
@@ -450,19 +494,26 @@ let users = [
 ];
 
 let pedidos = [
-  {id:1,cliente:'Mariana',qtd:2,valor:18,status:'pedido',rev:'thaissa',data:'2026-05-15',pgto:'pix',obs:''},
-  {id:2,cliente:'Roberto',qtd:4,valor:36,status:'entregue',rev:'alisson',data:'2026-05-14',pgto:'dinheiro',obs:'Vai pagar na sexta'},
-  {id:3,cliente:'Fernanda',qtd:1,valor:9,status:'pago',rev:'thaissa',data:'2026-05-12',dataPago:'2026-05-13',pgto:'pix',obs:''},
-  {id:4,cliente:'Joana',qtd:3,valor:27,status:'pago',rev:'nany',data:'2026-05-08',dataPago:'2026-05-09',pgto:'dinheiro',obs:''},
-  {id:5,cliente:'Beto',qtd:2,valor:18,status:'pedido',rev:'thaissa',data:'2026-05-05',pgto:'fiado',obs:'Pagou metade'},
-  {id:6,cliente:'Clara',qtd:5,valor:45,status:'pago',rev:'alisson',data:'2026-04-20',dataPago:'2026-04-21',pgto:'pix',obs:''},
-  {id:7,cliente:'Larissa',qtd:2,valor:18,status:'pago',rev:'nany',data:'2026-03-10',dataPago:'2026-03-11',pgto:'dinheiro',obs:''},
-  {id:8,cliente:'Mariana',qtd:3,valor:27,status:'pago',rev:'thaissa',data:'2026-04-28',dataPago:'2026-04-29',pgto:'pix',obs:''},
+  {id:1,cliente:'Mariana',qtd:2,valor:50,desconto:0,status:'pedido',rev:'thaissa',data:'2026-05-15',pgto:'pix',obs:'',loteId:1},
+  {id:2,cliente:'Roberto',qtd:4,valor:95,desconto:5,status:'entregue',rev:'alisson',data:'2026-05-14',pgto:'dinheiro',obs:'Vai pagar na sexta',loteId:1},
+  {id:3,cliente:'Fernanda',qtd:1,valor:25,desconto:0,status:'pago',rev:'thaissa',data:'2026-05-12',dataPago:'2026-05-13',pgto:'pix',obs:'',loteId:1},
+  {id:4,cliente:'Joana',qtd:3,valor:75,desconto:0,status:'pago',rev:'nany',data:'2026-05-08',dataPago:'2026-05-09',pgto:'dinheiro',obs:'',loteId:1},
+  {id:5,cliente:'Beto',qtd:2,valor:45,desconto:5,status:'pedido',rev:'thaissa',data:'2026-05-05',pgto:'fiado',obs:'Pagou metade',loteId:1},
+  {id:6,cliente:'Clara',qtd:5,valor:125,desconto:0,status:'pago',rev:'alisson',data:'2026-04-20',dataPago:'2026-04-21',pgto:'pix',obs:'',loteId:2},
+  {id:7,cliente:'Larissa',qtd:2,valor:50,desconto:0,status:'pago',rev:'nany',data:'2026-03-10',dataPago:'2026-03-11',pgto:'dinheiro',obs:'',loteId:3},
+  {id:8,cliente:'Mariana',qtd:3,valor:75,desconto:0,status:'pago',rev:'thaissa',data:'2026-04-28',dataPago:'2026-04-29',pgto:'pix',obs:'',loteId:2},
+];
+let lotes = [
+  {id:1,data:'2026-05-15',qtd:40,obs:'Lote principal do dia'},
+  {id:2,data:'2026-04-20',qtd:8,obs:'Lote anterior'},
+  {id:3,data:'2026-03-10',qtd:2,obs:'Lote fechado'},
 ];
 let nextId = 9;
+let nextLoteId = 4;
 let curUser = null, filtro = 'todos', periodo = 'semana';
 let histCliente = null;
-const DEMO_VERSION = '0v0-iuri-thaissa-alisson-nany-v1';
+const PRECO_DUZIA = 25;
+const DEMO_VERSION = '0v0-lotes-estoque-v2';
 let theme = safeGet('0v0_theme') || 'light';
 
 /* ═══════════ HELPERS ═══════════ */
@@ -476,6 +527,16 @@ function pgtoLabel(p){return{pix:'Pix',dinheiro:'Dinheiro',fiado:'Fiado'}[p]||p}
 function pgtoClass(p){return{pix:'pgto-pix',dinheiro:'pgto-din',fiado:'pgto-fia'}[p]||''}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
 function myPedidos(){return curUser.role==='admin'?pedidos:pedidos.filter(p=>p.rev===curUser.id)}
+function dinheiro(v){return`R$ ${(Number(v)||0).toFixed(2)}`}
+function loteNome(l){return l?`Lote ${fmtFull(l.data)}`:'Sem lote'}
+function loteUsado(id){return pedidos.filter(p=>p.loteId===id).reduce((s,p)=>s+p.qtd,0)}
+function loteRestante(l){return Math.max(0,(l?.qtd||0)-loteUsado(l?.id))}
+function loteAtivo(){
+  return lotes.slice().sort((a,b)=>b.id-a.id)[0]||null;
+}
+function pedidoTotal(qtd,desconto){
+  return Math.max(0,((Number(qtd)||0)*PRECO_DUZIA)-(Number(desconto)||0));
+}
 
 function safeGet(key){
   try{return localStorage.getItem(key)}catch(e){return null}
@@ -500,7 +561,9 @@ function toggleTheme(){
 function saveState(){
   safeSet('0v0_users',JSON.stringify(users));
   safeSet('0v0_pedidos',JSON.stringify(pedidos));
+  safeSet('0v0_lotes',JSON.stringify(lotes));
   safeSet('0v0_nextId',String(nextId));
+  safeSet('0v0_nextLoteId',String(nextLoteId));
 }
 function loadState(){
   if(safeGet('0v0_demo_version')!==DEMO_VERSION){
@@ -510,11 +573,15 @@ function loadState(){
   }
   const su=safeGet('0v0_users');
   const sp=safeGet('0v0_pedidos');
+  const sl=safeGet('0v0_lotes');
   const sn=safeGet('0v0_nextId');
-  if(su&&sp){
+  const snl=safeGet('0v0_nextLoteId');
+  if(su&&sp&&sl){
     users=JSON.parse(su);
     pedidos=JSON.parse(sp);
+    lotes=JSON.parse(sl);
     nextId=parseInt(sn,10)||Math.max(...pedidos.map(p=>p.id),0)+1;
+    nextLoteId=parseInt(snl,10)||Math.max(...lotes.map(l=>l.id),0)+1;
   }
 }
 
@@ -941,6 +1008,221 @@ function exportarCSV(){
   a.download=`0v0_${pLabel[periodo]}.csv`;
   a.click();
   toast('✓ CSV exportado!');
+}
+
+function renderLotePanel(){
+  const ativo=loteAtivo();
+  const panel=document.getElementById('lote-panel');
+  if(!ativo){
+    panel.innerHTML=`<div class="lot-card">
+      <div class="lot-head"><div><div class="lot-title">Nenhum lote ativo</div><div class="lot-sub">Cadastre um lote para começar a vender.</div></div><span class="lot-badge">0 dz</span></div>
+      ${curUser.role==='admin'?`<div class="lot-actions"><button onclick="openLoteModal()">Cadastrar lote</button></div>`:''}
+    </div>`;
+    return;
+  }
+  const usado=loteUsado(ativo.id);
+  const restante=loteRestante(ativo);
+  const pct=ativo.qtd?Math.min(100,(usado/ativo.qtd)*100):0;
+  panel.innerHTML=`<div class="lot-card">
+    <div class="lot-head">
+      <div><div class="lot-title">${loteNome(ativo)}</div><div class="lot-sub">${ativo.obs||'Estoque disponível para todos os vendedores'}</div></div>
+      <span class="lot-badge">${restante} dz restantes</span>
+    </div>
+    <div class="lot-bar"><div class="lot-fill" style="width:${pct}%"></div></div>
+    <div class="lot-info"><span>Entrada: ${ativo.qtd} dz</span><span>Vendido: ${usado} dz</span></div>
+    ${curUser.role==='admin'?`<div class="lot-actions"><button ${restante>0?'disabled':''} onclick="openLoteModal()">${restante>0?'Novo lote liberado ao zerar':'Cadastrar novo lote'}</button></div>`:''}
+  </div>`;
+}
+
+function togglePedidoDetails(event,el){
+  if(event.target.closest('button'))return;
+  el.closest('.pedido-card').classList.toggle('open');
+}
+
+function renderPedidos(){
+  const mp=myPedidos();
+  const antigos=mp.filter(p=>p.status!=='pago'&&diffDays(p.data)>5);
+  const ns=document.getElementById('notif-strip');
+  ns.innerHTML=antigos.length?`<div class="notif-strip"><i class="ti ti-alert-circle"></i><span><b>${antigos.length} pedido${antigos.length>1?'s':''}</b> há mais de 5 dias sem pagamento</span></div>`:'';
+  renderLotePanel();
+
+  const all=mp;
+  const aRec=all.filter(p=>p.status!=='pago').reduce((s,p)=>s+p.valor,0);
+  const aPg=all.filter(p=>p.status==='pago').reduce((s,p)=>s+p.valor,0);
+  const fiados=all.filter(p=>p.pgto==='fiado'&&p.status!=='pago').reduce((s,p)=>s+p.valor,0);
+  document.getElementById('stats-row').innerHTML=curUser.role==='admin'?`
+    <div class="stat-card"><div class="sc-label">A receber</div><div class="sc-val c-blue">${dinheiro(aRec)}</div></div>
+    <div class="stat-card"><div class="sc-label">Total pago</div><div class="sc-val c-green">${dinheiro(aPg)}</div></div>
+    <div class="stat-card"><div class="sc-label">Em fiado</div><div class="sc-val c-amber">${dinheiro(fiados)}</div></div>
+    <div class="stat-card"><div class="sc-label">Pedidos ativos</div><div class="sc-val">${all.filter(p=>p.status!=='pago').length}</div></div>`:
+    `<div class="stat-card"><div class="sc-label">Pedidos ativos</div><div class="sc-val">${all.filter(p=>p.status!=='pago').length}</div></div>
+    <div class="stat-card"><div class="sc-label">A entregar</div><div class="sc-val c-amber">${all.filter(p=>p.status==='pedido').length}</div></div>`;
+
+  let list=mp.filter(p=>p.status!=='pago');
+  if(filtro==='pedido')list=list.filter(p=>p.status==='pedido');
+  if(filtro==='entregue')list=list.filter(p=>p.status==='entregue');
+  list=list.slice().reverse();
+  if(!list.length){
+    document.getElementById('pedidos-list').innerHTML='<div class="empty"><i class="ti ti-clipboard-off"></i><span>Nenhum pedido aqui</span></div>';
+    return;
+  }
+  document.getElementById('pedidos-list').innerHTML=list.map(p=>{
+    const old=diffDays(p.data)>5;
+    const lote=lotes.find(l=>l.id===p.loteId);
+    return `<div class="pedido-card">
+      <div class="order-line" onclick="togglePedidoDetails(event,this)">
+        <div class="order-main">
+          <div class="order-name">${p.cliente}</div>
+          <div class="order-sub">${p.qtd} dz · ${fmtFull(p.data)}${curUser.role==='admin'&&lote?' · '+loteNome(lote):''}</div>
+        </div>
+        <div class="order-actions" onclick="event.stopPropagation()">
+          ${old?`<span class="alert-badge"><i class="ti ti-clock" style="font-size:13px"></i>${diffDays(p.data)}d</span>`:''}
+          ${p.status==='pedido'?`<button class="action-btn" onclick="setStatus(${p.id},'entregue')">Entregue</button>`:''}
+          ${p.status!=='pago'?`<button class="action-btn" onclick="setStatus(${p.id},'pago')">Pago</button>`:''}
+        </div>
+      </div>
+      <div class="pedido-details">
+        <div class="pc-meta">
+          <div class="pc-qtd"><i class="ti ti-egg" style="font-size:14px"></i>${p.qtd} dz</div>
+          ${curUser.role==='admin'?`<div class="pc-val">${dinheiro(p.valor)}</div><span class="pc-pgto ${pgtoClass(p.pgto)}">${pgtoLabel(p.pgto)}</span>`:''}
+          <span class="status-badge ${p.status==='pedido'?'sb-pendente':p.status==='entregue'?'sb-entregue':'sb-pago'}">${p.status==='pedido'?'Pendente':p.status==='entregue'?'Entregue':'Pago'}</span>
+        </div>
+        ${curUser.role==='admin'?`<div class="pc-rev"><i class="ti ti-user" style="font-size:12px"></i>${revName(p.rev)}${lote?' · '+loteNome(lote):''}${p.desconto?` · desconto ${dinheiro(p.desconto)}`:''}</div>`:''}
+        ${p.obs?`<div class="pc-obs"><i class="ti ti-notes" style="font-size:12px"></i> ${p.obs}</div>`:''}
+        <div class="pc-actions">
+          <button class="pc-action" onclick="openEdit(${p.id})"><i class="ti ti-pencil" style="font-size:15px"></i>Editar</button>
+          <button class="pc-action danger" onclick="excluirPedido(${p.id})"><i class="ti ti-trash" style="font-size:15px"></i>Excluir</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updatePedidoTotal(){
+  const qtd=parseInt(document.getElementById('m-qtd').value)||0;
+  const desc=parseFloat(document.getElementById('m-desc').value)||0;
+  const total=pedidoTotal(qtd,desc);
+  const ativo=loteAtivo();
+  document.getElementById('m-total-preview').textContent=dinheiro(total);
+  document.getElementById('m-lote-preview').textContent=ativo?`${fmtFull(ativo.data)} · ${loteRestante(ativo)} dz`:'Sem lote ativo';
+}
+
+function openModal(){
+  const ativo=loteAtivo();
+  if(!ativo){toast('Cadastre um lote antes de vender.');return}
+  document.getElementById('modal-title').textContent='Novo pedido';
+  const sel=document.getElementById('m-rev');
+  const revs=users.filter(u=>u.role==='rev');
+  sel.innerHTML=revs.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
+  const rf=document.getElementById('m-rev-field');
+  rf.style.display=(curUser.role==='admin'&&revs.length)?'':'none';
+  ['m-nome','m-obs'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('m-qtd').value='';
+  document.getElementById('m-desc').value='';
+  document.getElementById('m-pgto').value='pix';
+  updatePedidoTotal();
+  document.getElementById('modal-pedido').classList.add('open');
+}
+
+function salvarPedido(){
+  const ativo=loteAtivo();
+  if(!ativo){toast('Cadastre um lote antes de vender.');return}
+  const nome=document.getElementById('m-nome').value.trim();
+  const qtd=parseInt(document.getElementById('m-qtd').value)||0;
+  const desconto=parseFloat(document.getElementById('m-desc').value)||0;
+  const val=pedidoTotal(qtd,desconto);
+  const pgto=document.getElementById('m-pgto').value;
+  const obs=document.getElementById('m-obs').value.trim();
+  const rev=curUser.role==='rev'?curUser.id:(document.getElementById('m-rev').value||curUser.id);
+  if(!nome||qtd<=0){toast('Preencha nome e quantidade.');return}
+  if(qtd>loteRestante(ativo)){toast(`Estoque insuficiente neste lote. Restam ${loteRestante(ativo)} dz.`);return}
+  pedidos.push({id:nextId++,cliente:nome,qtd,valor:val,desconto,status:'pedido',rev,data:today(),pgto,obs,loteId:ativo.id});
+  saveState();
+  closeModal('modal-pedido');
+  renderPedidos();
+  toast('Pedido registrado!');
+}
+
+function openLoteModal(){
+  if(curUser.role!=='admin')return;
+  const ativo=loteAtivo();
+  if(ativo&&loteRestante(ativo)>0){toast('Só é possível cadastrar novo lote quando o lote atual acabar.');return}
+  document.getElementById('lote-data').value=today();
+  document.getElementById('lote-qtd').value='';
+  document.getElementById('lote-obs').value='';
+  document.getElementById('modal-lote').classList.add('open');
+}
+
+function salvarLote(){
+  const ativo=loteAtivo();
+  if(ativo&&loteRestante(ativo)>0){toast('Finalize o lote atual antes de abrir outro.');return}
+  const data=document.getElementById('lote-data').value||today();
+  const qtd=parseInt(document.getElementById('lote-qtd').value)||0;
+  const obs=document.getElementById('lote-obs').value.trim();
+  if(qtd<=0){toast('Informe a quantidade do lote.');return}
+  lotes.push({id:nextLoteId++,data,qtd,obs});
+  saveState();
+  closeModal('modal-lote');
+  renderPedidos();
+  toast('Lote cadastrado!');
+}
+
+function renderResumo(){
+  const pLabel={semana:'últimos 7 dias',mes:'este mês',ano:'este ano'};
+  const allF=filterByPeriod(pedidos,'data');
+  const pagosF=filterByPeriod(pedidos.filter(p=>p.status==='pago'),'dataPago');
+  const totFat=allF.reduce((s,p)=>s+p.valor,0);
+  const totPago=pagosF.reduce((s,p)=>s+p.valor,0);
+  const totARec=allF.filter(p=>p.status!=='pago').reduce((s,p)=>s+p.valor,0);
+  const totDz=allF.reduce((s,p)=>s+p.qtd,0);
+  const totDesc=allF.reduce((s,p)=>s+(p.desconto||0),0);
+  let html=`<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Período: ${pLabel[periodo]}</div>`;
+  html+=`<div class="stats-grid">
+    <div class="stat-card"><div class="sc-label">Faturado</div><div class="sc-val">${dinheiro(totFat)}</div></div>
+    <div class="stat-card"><div class="sc-label">Recebido</div><div class="sc-val c-green">${dinheiro(totPago)}</div></div>
+    <div class="stat-card"><div class="sc-label">A receber</div><div class="sc-val c-blue">${dinheiro(totARec)}</div></div>
+    <div class="stat-card"><div class="sc-label">Dúzias vendidas</div><div class="sc-val">${totDz} dz</div></div>
+    <div class="stat-card"><div class="sc-label">Descontos</div><div class="sc-val c-amber">${dinheiro(totDesc)}</div></div>
+  </div>`;
+
+  html+=`<div class="sec-header">Por estoque/lote</div>`;
+  lotes.slice().sort((a,b)=>b.id-a.id).forEach(l=>{
+    const items=pedidos.filter(p=>p.loteId===l.id);
+    const vendido=items.reduce((s,p)=>s+p.qtd,0);
+    const recebido=items.filter(p=>p.status==='pago').reduce((s,p)=>s+p.valor,0);
+    const faturado=items.reduce((s,p)=>s+p.valor,0);
+    const restante=loteRestante(l);
+    html+=`<div class="rev-card">
+      <div class="rc-head"><div class="rc-name">${loteNome(l)}</div><div class="rc-count">${restante} dz restantes</div></div>
+      <div class="rc-vals">
+        <div class="rcv"><div class="rcv-l">Entrada</div><div class="rcv-v">${l.qtd} dz</div></div>
+        <div class="rcv"><div class="rcv-l">Vendido</div><div class="rcv-v">${vendido} dz</div></div>
+        <div class="rcv"><div class="rcv-l">Faturado</div><div class="rcv-v">${dinheiro(faturado)}</div></div>
+      </div>
+      <div class="lot-info" style="margin-top:10px"><span>Recebido: ${dinheiro(recebido)}</span><span>${l.obs||''}</span></div>
+    </div>`;
+  });
+
+  const revs=users.filter(u=>u.role==='rev');
+  const revData=revs.map(r=>{
+    const ra=allF.filter(p=>p.rev===r.id);
+    const rp=pagosF.filter(p=>p.rev===r.id);
+    return{name:r.name,total:ra.reduce((s,p)=>s+p.valor,0),pago:rp.reduce((s,p)=>s+p.valor,0),arec:ra.filter(p=>p.status!=='pago').reduce((s,p)=>s+p.valor,0),count:ra.length};
+  }).filter(r=>r.count>0);
+  if(revData.length){
+    html+=`<div class="sec-header">Por revendedor</div>`;
+    revData.forEach(r=>{
+      html+=`<div class="rev-card">
+        <div class="rc-head"><div class="rc-name">${r.name}</div><div class="rc-count">${r.count} pedidos</div></div>
+        <div class="rc-vals">
+          <div class="rcv"><div class="rcv-l">Faturado</div><div class="rcv-v">${dinheiro(r.total)}</div></div>
+          <div class="rcv"><div class="rcv-l">Recebido</div><div class="rcv-v" style="color:var(--green-d)">${dinheiro(r.pago)}</div></div>
+          <div class="rcv"><div class="rcv-l">A receber</div><div class="rcv-v" style="color:var(--blue)">${dinheiro(r.arec)}</div></div>
+        </div>
+      </div>`;
+    });
+  }
+  document.getElementById('resumo-content').innerHTML=html;
 }
 
 // Fechar modal ao clicar fora
