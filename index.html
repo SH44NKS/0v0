@@ -168,6 +168,8 @@ html,body{height:100%;background:var(--bg);font-family:var(--font-body);color:va
 .lot-actions button{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface2);color:var(--text2);font-weight:700;cursor:pointer}
 .lot-actions button:not(:disabled){background:var(--green);color:#0F172A;border-color:var(--green)}
 .lot-actions button:disabled{opacity:.55;cursor:not-allowed}
+.stock-mini{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:14px;display:inline-flex;align-items:center;gap:8px;font-family:var(--font-head);font-weight:700;color:var(--green-d);box-shadow:var(--shadow)}
+.stock-mini i{font-size:18px}
 .order-line{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
 .order-main{min-width:0}
 .order-name{font-size:15px;font-weight:700;font-family:var(--font-head);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -343,7 +345,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--font-body);color:va
   </div>
   <div class="nav-tabs" id="nav-tabs">
     <div class="ntab active" onclick="goTab('pedidos')" id="nt-pedidos"><i class="ti ti-clipboard-list"></i>Pedidos</div>
-    <div class="ntab" onclick="goTab('pagos')" id="nt-pagos"><i class="ti ti-circle-check"></i>Pagos</div>
+    <div class="ntab admin-only" onclick="goTab('pagos')" id="nt-pagos"><i class="ti ti-circle-check"></i>Pedidos</div>
     <div class="ntab admin-only" onclick="goTab('resumo')" id="nt-resumo"><i class="ti ti-chart-bar"></i>Resumo</div>
     <div class="ntab admin-only" onclick="goTab('historico')" id="nt-historico"><i class="ti ti-users"></i>Clientes</div>
     <div class="ntab admin-only" onclick="goTab('usuarios')" id="nt-usuarios"><i class="ti ti-settings"></i>Config</div>
@@ -432,6 +434,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--font-body);color:va
         </select>
       </div>
       <div class="mfield admin-only" id="m-rev-field"><label>Revendedor</label><select id="m-rev"></select></div>
+      <div class="mfield admin-only" id="m-lote-field"><label>Lote</label><select id="m-lote"></select></div>
     </div>
     <div class="mfield"><label>Observação (opcional)</label><textarea id="m-obs" placeholder="Ex: Vai pagar na sexta, pagou metade..."></textarea></div>
     <div class="m-btns">
@@ -494,7 +497,7 @@ let users = [
 ];
 
 let pedidos = [
-  {id:1,cliente:'Mariana',qtd:2,valor:50,desconto:0,status:'pedido',rev:'thaissa',data:'2026-05-15',pgto:'pix',obs:'',loteId:1},
+  {id:1,cliente:'Mariana',qtd:2,valor:50,desconto:0,status:'solicitado',rev:'thaissa',data:'2026-05-15',pgto:'pix',obs:''},
   {id:2,cliente:'Roberto',qtd:4,valor:95,desconto:5,status:'entregue',rev:'alisson',data:'2026-05-14',pgto:'dinheiro',obs:'Vai pagar na sexta',loteId:1},
   {id:3,cliente:'Fernanda',qtd:1,valor:25,desconto:0,status:'pago',rev:'thaissa',data:'2026-05-12',dataPago:'2026-05-13',pgto:'pix',obs:'',loteId:1},
   {id:4,cliente:'Joana',qtd:3,valor:75,desconto:0,status:'pago',rev:'nany',data:'2026-05-08',dataPago:'2026-05-09',pgto:'dinheiro',obs:'',loteId:1},
@@ -513,7 +516,7 @@ let nextLoteId = 4;
 let curUser = null, filtro = 'todos', periodo = 'semana';
 let histCliente = null;
 const PRECO_DUZIA = 25;
-const DEMO_VERSION = '0v0-lotes-estoque-v2';
+const DEMO_VERSION = '0v0-admin-aprova-lote-v3';
 let theme = safeGet('0v0_theme') || 'light';
 
 /* ═══════════ HELPERS ═══════════ */
@@ -529,10 +532,13 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 function myPedidos(){return curUser.role==='admin'?pedidos:pedidos.filter(p=>p.rev===curUser.id)}
 function dinheiro(v){return`R$ ${(Number(v)||0).toFixed(2)}`}
 function loteNome(l){return l?`Lote ${fmtFull(l.data)}`:'Sem lote'}
-function loteUsado(id){return pedidos.filter(p=>p.loteId===id).reduce((s,p)=>s+p.qtd,0)}
+function loteUsado(id){return pedidos.filter(p=>p.loteId===id&&p.status!=='solicitado').reduce((s,p)=>s+p.qtd,0)}
 function loteRestante(l){return Math.max(0,(l?.qtd||0)-loteUsado(l?.id))}
 function loteAtivo(){
   return lotes.slice().sort((a,b)=>b.id-a.id)[0]||null;
+}
+function lotesDisponiveis(){
+  return lotes.slice().sort((a,b)=>b.id-a.id).filter(l=>loteRestante(l)>0);
 }
 function pedidoTotal(qtd,desconto){
   return Math.max(0,((Number(qtd)||0)*PRECO_DUZIA)-(Number(desconto)||0));
@@ -650,6 +656,7 @@ function showScreen(id){
   document.getElementById(id).classList.add('active');
 }
 function goTab(t){
+  if(curUser?.role!=='admin'&&t==='pagos')t='pedidos';
   ['pedidos','pagos','resumo','historico','usuarios'].forEach(x=>{
     document.getElementById('tc-'+x).style.display=x===t?'':'none';
     const el=document.getElementById('nt-'+x);
@@ -733,11 +740,29 @@ function renderPedidos(){
 function setStatus(id,s){
   const p=pedidos.find(x=>x.id===id);
   if(!p)return;
+  if(curUser.role!=='admin'){toast('Somente o admin pode alterar o status.');return}
   p.status=s;
   if(s==='pago')p.dataPago=today();
   saveState();
   renderPedidos();
   toast(s==='pago'?'✓ Marcado como pago':'✓ Marcado como entregue');
+}
+
+function aprovarPedido(id){
+  if(curUser.role!=='admin')return;
+  const p=pedidos.find(x=>x.id===id);
+  if(!p)return;
+  const disponiveis=lotesDisponiveis().filter(l=>loteRestante(l)>=p.qtd);
+  if(!disponiveis.length){toast('Nenhum lote com estoque suficiente para aprovar.');return}
+  const escolha=prompt(`Escolha o ID do lote para aprovar:\n${disponiveis.map(l=>`${l.id} - ${fmtFull(l.data)} (${loteRestante(l)} dz)`).join('\n')}`,String(disponiveis[0].id));
+  if(!escolha)return;
+  const lote=disponiveis.find(l=>String(l.id)===String(escolha).trim());
+  if(!lote){toast('Lote inválido.');return}
+  p.loteId=lote.id;
+  p.status='pedido';
+  saveState();
+  renderPedidos();
+  toast('Pedido aprovado!');
 }
 
 /* ═══════════ MODAL NOVO PEDIDO ═══════════ */
@@ -812,25 +837,27 @@ function closeModal(id){document.getElementById(id).classList.remove('open')}
 
 /* ═══════════ PAGOS ═══════════ */
 function renderPagos(){
-  let list=myPedidos().filter(p=>p.status==='pago').slice().reverse();
+  if(curUser.role!=='admin'){goTab('pedidos');return}
+  let list=pedidos.slice().reverse();
   if(!list.length){
-    document.getElementById('pagos-list').innerHTML='<div class="empty"><i class="ti ti-coin-off"></i><span>Nenhum pagamento ainda</span></div>';
+    document.getElementById('pagos-list').innerHTML='<div class="empty"><i class="ti ti-clipboard-off"></i><span>Nenhum pedido ainda</span></div>';
     return;
   }
-  const total=list.reduce((s,p)=>s+p.valor,0);
+  const total=list.filter(p=>p.status==='pago').reduce((s,p)=>s+p.valor,0);
   let html=`<div class="stats-grid" style="margin-bottom:16px">
-    <div class="stat-card" style="grid-column:span 2"><div class="sc-label">Total recebido</div><div class="sc-val c-green">R$ ${total.toFixed(2)}</div></div>
+    <div class="stat-card"><div class="sc-label">Pedidos</div><div class="sc-val">${list.length}</div></div>
+    <div class="stat-card"><div class="sc-label">Recebido</div><div class="sc-val c-green">${dinheiro(total)}</div></div>
   </div>`;
   let lastDate='';
   list.forEach(p=>{
-    if(p.dataPago!==lastDate){
-      html+=`<div class="sec-header">${fmtFull(p.dataPago)}</div>`;
-      lastDate=p.dataPago;
+    if(p.data!==lastDate){
+      html+=`<div class="sec-header">${fmtFull(p.data)}</div>`;
+      lastDate=p.data;
     }
     html+=`<div class="pago-card">
-      <div class="pago-head"><div class="pago-nome">${p.cliente}</div><div class="pago-data">Pago ${fmtFull(p.dataPago)}</div></div>
-      <div class="pago-val">R$ ${p.valor.toFixed(2)}</div>
-      <div class="pago-meta"><i class="ti ti-egg" style="font-size:12px;vertical-align:-1px"></i> ${p.qtd} dz · ${pgtoLabel(p.pgto)}${curUser.role==='admin'?' · '+revName(p.rev):''}</div>
+      <div class="pago-head"><div class="pago-nome">${p.cliente}</div><div class="pago-data">${p.status==='solicitado'?'Aguardando aprovação':p.status==='pedido'?'Aguardando entrega':p.status==='entregue'?'Entregue':'Pago'}</div></div>
+      <div class="pago-val">${dinheiro(p.valor)}</div>
+      <div class="pago-meta"><i class="ti ti-egg" style="font-size:12px;vertical-align:-1px"></i> ${p.qtd} dz · ${pgtoLabel(p.pgto)} · ${revName(p.rev)}</div>
       ${p.obs?`<div class="pc-obs" style="margin-top:6px"><i class="ti ti-notes" style="font-size:12px"></i> ${p.obs}</div>`:''}
     </div>`;
   });
@@ -1013,6 +1040,11 @@ function exportarCSV(){
 function renderLotePanel(){
   const ativo=loteAtivo();
   const panel=document.getElementById('lote-panel');
+  if(curUser.role!=='admin'){
+    const restante=ativo?loteRestante(ativo):0;
+    panel.innerHTML=`<div class="stock-mini"><i class="ti ti-package"></i><span>${restante} dz restantes</span></div>`;
+    return;
+  }
   if(!ativo){
     panel.innerHTML=`<div class="lot-card">
       <div class="lot-head"><div><div class="lot-title">Nenhum lote ativo</div><div class="lot-sub">Cadastre um lote para começar a vender.</div></div><span class="lot-badge">0 dz</span></div>
@@ -1041,25 +1073,26 @@ function togglePedidoDetails(event,el){
 
 function renderPedidos(){
   const mp=myPedidos();
-  const antigos=mp.filter(p=>p.status!=='pago'&&diffDays(p.data)>5);
+  const ativosStatus=curUser.role==='admin'?p=>p.status!=='pago':p=>p.status!=='pago';
+  const antigos=mp.filter(p=>p.status!=='pago'&&p.status!=='solicitado'&&diffDays(p.data)>5);
   const ns=document.getElementById('notif-strip');
   ns.innerHTML=antigos.length?`<div class="notif-strip"><i class="ti ti-alert-circle"></i><span><b>${antigos.length} pedido${antigos.length>1?'s':''}</b> há mais de 5 dias sem pagamento</span></div>`:'';
   renderLotePanel();
 
   const all=mp;
-  const aRec=all.filter(p=>p.status!=='pago').reduce((s,p)=>s+p.valor,0);
+  const aprovados=all.filter(p=>p.status!=='solicitado');
+  const aRec=aprovados.filter(p=>p.status!=='pago').reduce((s,p)=>s+p.valor,0);
   const aPg=all.filter(p=>p.status==='pago').reduce((s,p)=>s+p.valor,0);
-  const fiados=all.filter(p=>p.pgto==='fiado'&&p.status!=='pago').reduce((s,p)=>s+p.valor,0);
+  const fiados=aprovados.filter(p=>p.pgto==='fiado'&&p.status!=='pago').reduce((s,p)=>s+p.valor,0);
   document.getElementById('stats-row').innerHTML=curUser.role==='admin'?`
     <div class="stat-card"><div class="sc-label">A receber</div><div class="sc-val c-blue">${dinheiro(aRec)}</div></div>
     <div class="stat-card"><div class="sc-label">Total pago</div><div class="sc-val c-green">${dinheiro(aPg)}</div></div>
     <div class="stat-card"><div class="sc-label">Em fiado</div><div class="sc-val c-amber">${dinheiro(fiados)}</div></div>
-    <div class="stat-card"><div class="sc-label">Pedidos ativos</div><div class="sc-val">${all.filter(p=>p.status!=='pago').length}</div></div>`:
-    `<div class="stat-card"><div class="sc-label">Pedidos ativos</div><div class="sc-val">${all.filter(p=>p.status!=='pago').length}</div></div>
-    <div class="stat-card"><div class="sc-label">A entregar</div><div class="sc-val c-amber">${all.filter(p=>p.status==='pedido').length}</div></div>`;
+    <div class="stat-card"><div class="sc-label">Para aprovar</div><div class="sc-val">${all.filter(p=>p.status==='solicitado').length}</div></div>`:
+    `<div class="stat-card"><div class="sc-label">Pedidos lançados</div><div class="sc-val">${all.filter(p=>p.status==='solicitado').length}</div></div>`;
 
   let list=mp.filter(p=>p.status!=='pago');
-  if(filtro==='pedido')list=list.filter(p=>p.status==='pedido');
+  if(filtro==='pedido')list=list.filter(p=>p.status==='pedido'||p.status==='solicitado');
   if(filtro==='entregue')list=list.filter(p=>p.status==='entregue');
   list=list.slice().reverse();
   if(!list.length){
@@ -1077,15 +1110,16 @@ function renderPedidos(){
         </div>
         <div class="order-actions" onclick="event.stopPropagation()">
           ${old?`<span class="alert-badge"><i class="ti ti-clock" style="font-size:13px"></i>${diffDays(p.data)}d</span>`:''}
-          ${p.status==='pedido'?`<button class="action-btn" onclick="setStatus(${p.id},'entregue')">Entregue</button>`:''}
-          ${p.status!=='pago'?`<button class="action-btn" onclick="setStatus(${p.id},'pago')">Pago</button>`:''}
+          ${curUser.role==='admin'&&p.status==='solicitado'?`<button class="action-btn" onclick="aprovarPedido(${p.id})">Aprovar</button>`:''}
+          ${curUser.role==='admin'&&p.status==='pedido'?`<button class="action-btn" onclick="setStatus(${p.id},'entregue')">Entregue</button>`:''}
+          ${curUser.role==='admin'&&p.status!=='pago'&&p.status!=='solicitado'?`<button class="action-btn" onclick="setStatus(${p.id},'pago')">Pago</button>`:''}
         </div>
       </div>
       <div class="pedido-details">
         <div class="pc-meta">
           <div class="pc-qtd"><i class="ti ti-egg" style="font-size:14px"></i>${p.qtd} dz</div>
           ${curUser.role==='admin'?`<div class="pc-val">${dinheiro(p.valor)}</div><span class="pc-pgto ${pgtoClass(p.pgto)}">${pgtoLabel(p.pgto)}</span>`:''}
-          <span class="status-badge ${p.status==='pedido'?'sb-pendente':p.status==='entregue'?'sb-entregue':'sb-pago'}">${p.status==='pedido'?'Pendente':p.status==='entregue'?'Entregue':'Pago'}</span>
+          <span class="status-badge ${p.status==='solicitado'||p.status==='pedido'?'sb-pendente':p.status==='entregue'?'sb-entregue':'sb-pago'}">${p.status==='solicitado'?'Aguardando aprovação':p.status==='pedido'?'Aguardando entrega':p.status==='entregue'?'Entregue':'Pago'}</span>
         </div>
         ${curUser.role==='admin'?`<div class="pc-rev"><i class="ti ti-user" style="font-size:12px"></i>${revName(p.rev)}${lote?' · '+loteNome(lote):''}${p.desconto?` · desconto ${dinheiro(p.desconto)}`:''}</div>`:''}
         ${p.obs?`<div class="pc-obs"><i class="ti ti-notes" style="font-size:12px"></i> ${p.obs}</div>`:''}
@@ -1116,6 +1150,11 @@ function openModal(){
   sel.innerHTML=revs.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
   const rf=document.getElementById('m-rev-field');
   rf.style.display=(curUser.role==='admin'&&revs.length)?'':'none';
+  const lf=document.getElementById('m-lote-field');
+  const loteSel=document.getElementById('m-lote');
+  const disponiveis=lotesDisponiveis();
+  loteSel.innerHTML=disponiveis.map(l=>`<option value="${l.id}">${fmtFull(l.data)} - ${loteRestante(l)} dz</option>`).join('');
+  lf.style.display=(curUser.role==='admin'&&disponiveis.length)?'':'none';
   ['m-nome','m-obs'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('m-qtd').value='';
   document.getElementById('m-desc').value='';
@@ -1125,7 +1164,8 @@ function openModal(){
 }
 
 function salvarPedido(){
-  const ativo=loteAtivo();
+  const selecionadoId=curUser.role==='admin'?parseInt(document.getElementById('m-lote').value):null;
+  const ativo=curUser.role==='admin'?lotes.find(l=>l.id===selecionadoId):loteAtivo();
   if(!ativo){toast('Cadastre um lote antes de vender.');return}
   const nome=document.getElementById('m-nome').value.trim();
   const qtd=parseInt(document.getElementById('m-qtd').value)||0;
@@ -1135,8 +1175,10 @@ function salvarPedido(){
   const obs=document.getElementById('m-obs').value.trim();
   const rev=curUser.role==='rev'?curUser.id:(document.getElementById('m-rev').value||curUser.id);
   if(!nome||qtd<=0){toast('Preencha nome e quantidade.');return}
-  if(qtd>loteRestante(ativo)){toast(`Estoque insuficiente neste lote. Restam ${loteRestante(ativo)} dz.`);return}
-  pedidos.push({id:nextId++,cliente:nome,qtd,valor:val,desconto,status:'pedido',rev,data:today(),pgto,obs,loteId:ativo.id});
+  if(curUser.role==='admin'&&qtd>loteRestante(ativo)){toast(`Estoque insuficiente neste lote. Restam ${loteRestante(ativo)} dz.`);return}
+  const status=curUser.role==='admin'?'pedido':'solicitado';
+  const loteId=curUser.role==='admin'?ativo.id:null;
+  pedidos.push({id:nextId++,cliente:nome,qtd,valor:val,desconto,status,rev,data:today(),pgto,obs,loteId});
   saveState();
   closeModal('modal-pedido');
   renderPedidos();
