@@ -1080,18 +1080,17 @@ function renderPedidos(){
   renderLotePanel();
 
   const all=mp;
-  const aprovados=all.filter(p=>p.status!=='solicitado');
-  const aRec=aprovados.filter(p=>p.status!=='pago').reduce((s,p)=>s+p.valor,0);
-  const aPg=all.filter(p=>p.status==='pago').reduce((s,p)=>s+p.valor,0);
-  const fiados=aprovados.filter(p=>p.pgto==='fiado'&&p.status!=='pago').reduce((s,p)=>s+p.valor,0);
   document.getElementById('stats-row').innerHTML=curUser.role==='admin'?`
-    <div class="stat-card"><div class="sc-label">A receber</div><div class="sc-val c-blue">${dinheiro(aRec)}</div></div>
-    <div class="stat-card"><div class="sc-label">Total pago</div><div class="sc-val c-green">${dinheiro(aPg)}</div></div>
-    <div class="stat-card"><div class="sc-label">Em fiado</div><div class="sc-val c-amber">${dinheiro(fiados)}</div></div>
-    <div class="stat-card"><div class="sc-label">Para aprovar</div><div class="sc-val">${all.filter(p=>p.status==='solicitado').length}</div></div>`:
-    `<div class="stat-card"><div class="sc-label">Pedidos lançados</div><div class="sc-val">${all.filter(p=>p.status==='solicitado').length}</div></div>`;
+    <div class="stat-card"><div class="sc-label">Para aprovar</div><div class="sc-val">${all.filter(p=>p.status==='solicitado').length}</div></div>
+    <div class="stat-card"><div class="sc-label">Pendentes</div><div class="sc-val c-amber">${all.filter(p=>p.status==='pedido').length}</div></div>
+    <div class="stat-card"><div class="sc-label">Entregues</div><div class="sc-val c-blue">${all.filter(p=>p.status==='entregue').length}</div></div>
+    <div class="stat-card"><div class="sc-label">Pagos</div><div class="sc-val c-green">${all.filter(p=>p.status==='pago').length}</div></div>`:
+    `<div class="stat-card"><div class="sc-label">Lançados</div><div class="sc-val">${all.filter(p=>p.status==='solicitado').length}</div></div>
+    <div class="stat-card"><div class="sc-label">Aprovados</div><div class="sc-val c-blue">${all.filter(p=>p.status==='pedido'||p.status==='entregue'||p.status==='pago').length}</div></div>
+    <div class="stat-card"><div class="sc-label">Entregues</div><div class="sc-val c-amber">${all.filter(p=>p.status==='entregue').length}</div></div>
+    <div class="stat-card"><div class="sc-label">Pagos</div><div class="sc-val c-green">${all.filter(p=>p.status==='pago').length}</div></div>`;
 
-  let list=mp.filter(p=>p.status!=='pago');
+  let list=curUser.role==='admin'?mp.filter(p=>p.status!=='pago'):mp;
   if(filtro==='pedido')list=list.filter(p=>p.status==='pedido'||p.status==='solicitado');
   if(filtro==='entregue')list=list.filter(p=>p.status==='entregue');
   list=list.slice().reverse();
@@ -1123,10 +1122,10 @@ function renderPedidos(){
         </div>
         ${curUser.role==='admin'?`<div class="pc-rev"><i class="ti ti-user" style="font-size:12px"></i>${revName(p.rev)}${lote?' · '+loteNome(lote):''}${p.desconto?` · desconto ${dinheiro(p.desconto)}`:''}</div>`:''}
         ${p.obs?`<div class="pc-obs"><i class="ti ti-notes" style="font-size:12px"></i> ${p.obs}</div>`:''}
-        <div class="pc-actions">
+        ${curUser.role==='admin'?`<div class="pc-actions">
           <button class="pc-action" onclick="openEdit(${p.id})"><i class="ti ti-pencil" style="font-size:15px"></i>Editar</button>
           <button class="pc-action danger" onclick="excluirPedido(${p.id})"><i class="ti ti-trash" style="font-size:15px"></i>Excluir</button>
-        </div>
+        </div>`:''}
       </div>
     </div>`;
   }).join('');
