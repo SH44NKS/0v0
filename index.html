@@ -184,6 +184,13 @@ html,body{height:100%;background:var(--bg);font-family:var(--font-body);color:va
 .calc-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 12px;margin-bottom:1rem}
 .calc-line{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--text2);margin-bottom:4px}
 .calc-line strong{color:var(--text);font-family:var(--font-head)}
+.summary-card{cursor:pointer;transition:.15s}
+.summary-card:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+.detail-list{display:flex;flex-direction:column;gap:8px}
+.detail-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--text2)}
+.detail-row:last-child{border-bottom:0}
+.detail-row strong{color:var(--text);font-family:var(--font-head);text-align:right}
+.detail-subtitle{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin:14px 0 6px}
 
 /* ── ALERT BADGE ── */
 .alert-badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:#92400E;background:#FEF3C7;border:1px solid #FCD34D;border-radius:var(--r-full);padding:4px 10px}
@@ -458,6 +465,18 @@ html,body{height:100%;background:var(--bg);font-family:var(--font-body);color:va
     <div class="m-btns">
       <button class="m-cancel" onclick="closeModal('modal-lote')">Cancelar</button>
       <button class="m-save" onclick="salvarLote()">Salvar lote</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RESUMO DETALHADO -->
+<div class="modal-overlay" id="modal-resumo">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="resumo-modal-title">Detalhes</div>
+    <div id="resumo-modal-content"></div>
+    <div class="m-btns">
+      <button class="m-save" onclick="closeModal('modal-resumo')">Fechar</button>
     </div>
   </div>
 </div>
@@ -1211,62 +1230,82 @@ function salvarLote(){
   toast('Lote cadastrado!');
 }
 
-function renderResumo(){
-  const pLabel={semana:'últimos 7 dias',mes:'este mês',ano:'este ano'};
+function resumoPeriodoDados(){
   const allF=filterByPeriod(pedidos,'data');
   const pagosF=filterByPeriod(pedidos.filter(p=>p.status==='pago'),'dataPago');
-  const totFat=allF.reduce((s,p)=>s+p.valor,0);
-  const totPago=pagosF.reduce((s,p)=>s+p.valor,0);
-  const totARec=allF.filter(p=>p.status!=='pago').reduce((s,p)=>s+p.valor,0);
-  const totDz=allF.reduce((s,p)=>s+p.qtd,0);
-  const totDesc=allF.reduce((s,p)=>s+(p.desconto||0),0);
+  return {allF,pagosF};
+}
+
+function renderResumo(){
+  const pLabel={semana:'últimos 7 dias',mes:'este mês',ano:'este ano'};
+  const {allF,pagosF}=resumoPeriodoDados();
+  const total=allF.reduce((s,p)=>s+p.valor,0);
+  const dz=allF.reduce((s,p)=>s+p.qtd,0);
+  const pedidosCount=allF.length;
+  const lotesCount=new Set(allF.map(p=>p.loteId).filter(Boolean)).size;
+  const vendedoresCount=new Set(allF.map(p=>p.rev)).size;
   let html=`<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Período: ${pLabel[periodo]}</div>`;
   html+=`<div class="stats-grid">
-    <div class="stat-card"><div class="sc-label">Faturado</div><div class="sc-val">${dinheiro(totFat)}</div></div>
-    <div class="stat-card"><div class="sc-label">Recebido</div><div class="sc-val c-green">${dinheiro(totPago)}</div></div>
-    <div class="stat-card"><div class="sc-label">A receber</div><div class="sc-val c-blue">${dinheiro(totARec)}</div></div>
-    <div class="stat-card"><div class="sc-label">Dúzias vendidas</div><div class="sc-val">${totDz} dz</div></div>
-    <div class="stat-card"><div class="sc-label">Descontos</div><div class="sc-val c-amber">${dinheiro(totDesc)}</div></div>
+    <div class="stat-card summary-card" onclick="abrirResumoDetalhe('geral')"><div class="sc-label">Valor total</div><div class="sc-val">${dinheiro(total)}</div></div>
+    <div class="stat-card summary-card" onclick="abrirResumoDetalhe('geral')"><div class="sc-label">Dúzias</div><div class="sc-val">${dz} dz</div></div>
+    <div class="stat-card summary-card" onclick="abrirResumoDetalhe('lotes')"><div class="sc-label">Lotes usados</div><div class="sc-val c-blue">${lotesCount}</div></div>
+    <div class="stat-card summary-card" onclick="abrirResumoDetalhe('vendedores')"><div class="sc-label">Vendedores</div><div class="sc-val c-green">${vendedoresCount}</div></div>
   </div>`;
-
-  html+=`<div class="sec-header">Por estoque/lote</div>`;
-  lotes.slice().sort((a,b)=>b.id-a.id).forEach(l=>{
-    const items=pedidos.filter(p=>p.loteId===l.id);
-    const vendido=items.reduce((s,p)=>s+p.qtd,0);
-    const recebido=items.filter(p=>p.status==='pago').reduce((s,p)=>s+p.valor,0);
-    const faturado=items.reduce((s,p)=>s+p.valor,0);
-    const restante=loteRestante(l);
-    html+=`<div class="rev-card">
-      <div class="rc-head"><div class="rc-name">${loteNome(l)}</div><div class="rc-count">${restante} dz restantes</div></div>
-      <div class="rc-vals">
-        <div class="rcv"><div class="rcv-l">Entrada</div><div class="rcv-v">${l.qtd} dz</div></div>
-        <div class="rcv"><div class="rcv-l">Vendido</div><div class="rcv-v">${vendido} dz</div></div>
-        <div class="rcv"><div class="rcv-l">Faturado</div><div class="rcv-v">${dinheiro(faturado)}</div></div>
-      </div>
-      <div class="lot-info" style="margin-top:10px"><span>Recebido: ${dinheiro(recebido)}</span><span>${l.obs||''}</span></div>
-    </div>`;
-  });
-
-  const revs=users.filter(u=>u.role==='rev');
-  const revData=revs.map(r=>{
-    const ra=allF.filter(p=>p.rev===r.id);
-    const rp=pagosF.filter(p=>p.rev===r.id);
-    return{name:r.name,total:ra.reduce((s,p)=>s+p.valor,0),pago:rp.reduce((s,p)=>s+p.valor,0),arec:ra.filter(p=>p.status!=='pago').reduce((s,p)=>s+p.valor,0),count:ra.length};
-  }).filter(r=>r.count>0);
-  if(revData.length){
-    html+=`<div class="sec-header">Por revendedor</div>`;
-    revData.forEach(r=>{
-      html+=`<div class="rev-card">
-        <div class="rc-head"><div class="rc-name">${r.name}</div><div class="rc-count">${r.count} pedidos</div></div>
-        <div class="rc-vals">
-          <div class="rcv"><div class="rcv-l">Faturado</div><div class="rcv-v">${dinheiro(r.total)}</div></div>
-          <div class="rcv"><div class="rcv-l">Recebido</div><div class="rcv-v" style="color:var(--green-d)">${dinheiro(r.pago)}</div></div>
-          <div class="rcv"><div class="rcv-l">A receber</div><div class="rcv-v" style="color:var(--blue)">${dinheiro(r.arec)}</div></div>
-        </div>
-      </div>`;
-    });
-  }
+  html+=`<div class="sec-header">Resumo rápido</div>`;
+  html+=`<div class="rev-card summary-card" onclick="abrirResumoDetalhe('lotes')"><div class="rc-head"><div class="rc-name">Por lote</div><div class="rc-count">Toque para detalhar</div></div><div class="lot-info"><span>${lotesCount} lote${lotesCount!==1?'s':''}</span><span>${dz} dz vendidas</span></div></div>`;
+  html+=`<div class="rev-card summary-card" onclick="abrirResumoDetalhe('vendedores')"><div class="rc-head"><div class="rc-name">Por vendedor e lote</div><div class="rc-count">Toque para detalhar</div></div><div class="lot-info"><span>${vendedoresCount} vendedor${vendedoresCount!==1?'es':''}</span><span>${pedidosCount} pedido${pedidosCount!==1?'s':''}</span></div></div>`;
   document.getElementById('resumo-content').innerHTML=html;
+}
+
+function abrirResumoDetalhe(tipo){
+  const {allF,pagosF}=resumoPeriodoDados();
+  let title='Detalhes do resumo';
+  let html='';
+  if(tipo==='geral'){
+    title='Resumo geral';
+    const total=allF.reduce((s,p)=>s+p.valor,0);
+    const recebido=pagosF.reduce((s,p)=>s+p.valor,0);
+    const descontos=allF.reduce((s,p)=>s+(p.desconto||0),0);
+    html=`<div class="detail-list">
+      <div class="detail-row"><span>Valor total</span><strong>${dinheiro(total)}</strong></div>
+      <div class="detail-row"><span>Recebido</span><strong>${dinheiro(recebido)}</strong></div>
+      <div class="detail-row"><span>Pedidos</span><strong>${allF.length}</strong></div>
+      <div class="detail-row"><span>Dúzias vendidas</span><strong>${allF.reduce((s,p)=>s+p.qtd,0)} dz</strong></div>
+      <div class="detail-row"><span>Descontos</span><strong>${dinheiro(descontos)}</strong></div>
+    </div>`;
+  }
+  if(tipo==='lotes'){
+    title='Resumo por lote';
+    html='<div class="detail-list">';
+    lotes.slice().sort((a,b)=>b.id-a.id).forEach(l=>{
+      const items=allF.filter(p=>p.loteId===l.id);
+      if(!items.length)return;
+      html+=`<div class="detail-subtitle">${loteNome(l)}</div>
+      <div class="detail-row"><span>Vendido</span><strong>${items.reduce((s,p)=>s+p.qtd,0)} dz</strong></div>
+      <div class="detail-row"><span>Valor total</span><strong>${dinheiro(items.reduce((s,p)=>s+p.valor,0))}</strong></div>
+      <div class="detail-row"><span>Pedidos</span><strong>${items.length}</strong></div>
+      <div class="detail-row"><span>Restante no lote</span><strong>${loteRestante(l)} dz</strong></div>`;
+    });
+    html+='</div>';
+  }
+  if(tipo==='vendedores'){
+    title='Vendedor por lote';
+    html='<div class="detail-list">';
+    users.filter(u=>u.role==='rev').forEach(v=>{
+      const vp=allF.filter(p=>p.rev===v.id);
+      if(!vp.length)return;
+      html+=`<div class="detail-subtitle">${v.name}</div>`;
+      lotes.slice().sort((a,b)=>b.id-a.id).forEach(l=>{
+        const items=vp.filter(p=>p.loteId===l.id);
+        if(!items.length)return;
+        html+=`<div class="detail-row"><span>${loteNome(l)} · ${items.length} pedido${items.length!==1?'s':''}</span><strong>${items.reduce((s,p)=>s+p.qtd,0)} dz · ${dinheiro(items.reduce((s,p)=>s+p.valor,0))}</strong></div>`;
+      });
+    });
+    html+='</div>';
+  }
+  document.getElementById('resumo-modal-title').textContent=title;
+  document.getElementById('resumo-modal-content').innerHTML=html||'<div class="empty"><i class="ti ti-chart-bar-off"></i><span>Nenhum dado neste período</span></div>';
+  document.getElementById('modal-resumo').classList.add('open');
 }
 
 // Fechar modal ao clicar fora
