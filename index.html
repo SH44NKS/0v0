@@ -11,6 +11,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
 <style>
 :root{
   --g:#00C896;--gd:#008F6A;--gp:#E0FAF4;--gt:#06231B;
@@ -490,6 +492,10 @@ let lotes=[
 ];
 let nextId=9,nextLoteId=4,curUser=null,filtro='todos',periodo='semana',histCliente=null;
 const PRECO=25,VER='0v0-manual-base-v1';
+const BACKEND=window.OVO_CONFIG||{};
+const sbReady=Boolean(BACKEND.SUPABASE_URL&&BACKEND.SUPABASE_ANON_KEY&&window.supabase);
+const sb=sbReady?window.supabase.createClient(BACKEND.SUPABASE_URL,BACKEND.SUPABASE_ANON_KEY):null;
+let remoteMode=false;
 
 // ── HELPERS ──
 const ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
@@ -509,11 +515,54 @@ const myPedidos=()=>curUser.role==='admin'?pedidos:pedidos.filter(p=>p.rev===cur
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2300)}
 function sg(k){try{return localStorage.getItem(k)}catch{return null}}
 function ss(k,v){try{localStorage.setItem(k,v)}catch{}}
-function save(){ss('0v0_u',JSON.stringify(users));ss('0v0_p',JSON.stringify(pedidos));ss('0v0_l',JSON.stringify(lotes));ss('0v0_ni',nextId);ss('0v0_nl',nextLoteId)}
+async function hashPass(pass){
+  const data=new TextEncoder().encode(`0v0:${pass}`);
+  const hash=await crypto.subtle.digest('SHA-256',data);
+  return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function toDbOrder(p){
+  return {id:p.id,cliente:p.cliente,qtd:p.qtd,valor:p.valor,desconto:p.desconto||0,status:p.status,rev:p.rev,data:p.data,data_pago:p.dataPago||null,pgto:p.pgto||'pix',obs:p.obs||'',lote_id:p.loteId||null};
+}
+function fromDbOrder(p){
+  return {id:p.id,cliente:p.cliente,qtd:p.qtd,valor:Number(p.valor)||0,desconto:Number(p.desconto)||0,status:p.status,rev:p.rev,data:p.data,dataPago:p.data_pago||null,pgto:p.pgto||'pix',obs:p.obs||'',loteId:p.lote_id||null};
+}
+function toDbLot(l){return {id:l.id,data:l.data,qtd:l.qtd,obs:l.obs||''}}
+function fromDbLot(l){return {id:l.id,data:l.data,qtd:l.qtd,obs:l.obs||''}}
+function toDbUser(u){return {id:u.id,name:u.name,username:u.username,role:u.role,pass_hash:u.passHash||u.pass_hash||''}}
+function fromDbUser(u){return {id:u.id,name:u.name,username:u.username,role:u.role,passHash:u.pass_hash}}
+async function save(){
+  ss('0v0_u',JSON.stringify(users));ss('0v0_p',JSON.stringify(pedidos));ss('0v0_l',JSON.stringify(lotes));ss('0v0_ni',nextId);ss('0v0_nl',nextLoteId);
+  if(!remoteMode)return;
+  const userRows=users.map(toDbUser).filter(u=>u.pass_hash);
+  const lotRows=lotes.map(toDbLot);
+  const orderRows=pedidos.map(toDbOrder);
+  if(userRows.length)await sb.from('app_users').upsert(userRows);
+  if(lotRows.length)await sb.from('lots').upsert(lotRows);
+  if(orderRows.length)await sb.from('orders').upsert(orderRows);
+}
 function load(){
   if(sg('0v0_ver')!==VER){save();ss('0v0_ver',VER);return}
   const u=sg('0v0_u'),p=sg('0v0_p'),l=sg('0v0_l');
   if(u&&p&&l){users=JSON.parse(u);pedidos=JSON.parse(p);lotes=JSON.parse(l);nextId=+sg('0v0_ni')||nextId;nextLoteId=+sg('0v0_nl')||nextLoteId}
+}
+async function loadRemote(){
+  if(!sbReady)return false;
+  const [u,p,l]=await Promise.all([
+    sb.from('app_users').select('*').order('created_at',{ascending:true}),
+    sb.from('orders').select('*').order('id',{ascending:true}),
+    sb.from('lots').select('*').order('id',{ascending:true})
+  ]);
+  if(u.error||p.error||l.error){console.warn('Supabase indisponivel',u.error||p.error||l.error);return false}
+  users=(u.data||[]).map(fromDbUser);
+  pedidos=(p.data||[]).map(fromDbOrder);
+  lotes=(l.data||[]).map(fromDbLot);
+  nextId=(Math.max(0,...pedidos.map(x=>x.id))+1)||1;
+  nextLoteId=(Math.max(0,...lotes.map(x=>x.id))+1)||1;
+  remoteMode=true;
+  return true;
+}
+async function deleteRemote(table,id){
+  if(remoteMode)await sb.from(table).delete().eq('id',id);
 }
 function filterByPeriod(list,f){
   const now=new Date();
@@ -543,22 +592,23 @@ function loginTab(tab,el){
   document.getElementById('l-err').style.display='none';
 }
 function showErr(m){const e=document.getElementById('l-err');e.textContent=m;e.style.display=''}
-function doLogin(){
+async function doLogin(){
   const u=document.getElementById('l-user').value.trim().toLowerCase();
   const p=document.getElementById('l-pass').value;
-  const f=users.find(x=>x.username.toLowerCase()===u&&x.pass===p);
+  const passHash=await hashPass(p);
+  const f=users.find(x=>x.username.toLowerCase()===u&&(remoteMode?x.passHash===passHash:x.pass===p));
   if(!f){showErr('Usuário ou senha incorretos.');return}
   enterDash(f);
 }
-function doRegister(){
+async function doRegister(){
   const nome=document.getElementById('c-nome').value.trim();
   const u=document.getElementById('c-user').value.trim().toLowerCase();
   const p=document.getElementById('c-pass').value;
   if(!nome||!u||p.length<4){showErr('Preencha tudo (senha mín. 4 caracteres).');return}
   if(users.find(x=>x.username.toLowerCase()===u)){showErr('Usuário já existe.');return}
   if(users.filter(x=>x.role==='rev').length>=5){showErr('Limite de 5 revendedores atingido.');return}
-  const nu={id:u,name:nome,username:u,pass:p,role:'rev'};
-  users.push(nu);save();enterDash(nu);
+  const nu={id:u,name:nome,username:u,pass:p,passHash:await hashPass(p),role:'rev'};
+  users.push(nu);await save();enterDash(nu);
 }
 function enterDash(user){
   curUser=user;
@@ -686,20 +736,20 @@ function toggleCard(id){
   if(!was)el.classList.add('open');
 }
 
-function setStatus(id,s){
+async function setStatus(id,s){
   const p=pedidos.find(x=>x.id===id);if(!p)return;
   if(curUser.role!=='admin'){toast('Somente o admin pode alterar status.');return}
   p.status=s;if(s==='pago')p.dataPago=today();
-  save();renderPedidos();toast(s==='pago'?'✓ Marcado como pago':'✓ Marcado como entregue');
+  await save();renderPedidos();toast(s==='pago'?'✓ Marcado como pago':'✓ Marcado como entregue');
 }
-function aprovarPedido(id){
+async function aprovarPedido(id){
   if(curUser.role!=='admin')return;
   const p=pedidos.find(x=>x.id===id);if(!p)return;
   const la=loteAtivo();
   if(!la){toast('Cadastre um lote antes de aprovar.');return}
   if(loteRest(la)<p.qtd){toast(`Estoque insuficiente. Restam ${loteRest(la)} qtd.`);return}
   p.loteId=la.id;p.status='pedido';
-  save();renderPedidos();toast('✓ Pedido aprovado!');
+  await save();renderPedidos();toast('✓ Pedido aprovado!');
 }
 
 // ── MODAL PEDIDO ──
@@ -720,7 +770,7 @@ function openModalPedido(){
   document.getElementById('m-total').textContent='R$ 0,00';
   document.getElementById('mo-pedido').classList.add('open');
 }
-function salvarPedido(){
+async function salvarPedido(){
   const la=loteAtivo();if(!la){toast('Sem lote ativo.');return}
   const nome=document.getElementById('m-nome').value.trim();
   const qtd=parseInt(document.getElementById('m-qtd').value)||0;
@@ -732,7 +782,7 @@ function salvarPedido(){
   if(!nome||qtd<=0){toast('⚠ Preencha nome e quantidade');return}
   if(curUser.role==='admin'&&qtd>loteRest(la)){toast(`Estoque insuficiente. Restam ${loteRest(la)} qtd.`);return}
   pedidos.push({id:nextId++,cliente:nome,qtd,valor:val,desconto:desc,status:curUser.role==='admin'?'pedido':'solicitado',rev,data:today(),pgto,obs,loteId:curUser.role==='admin'?la.id:null});
-  save();closeModal('mo-pedido');renderPedidos();toast('✓ Pedido registrado!');
+  await save();closeModal('mo-pedido');renderPedidos();toast('✓ Pedido registrado!');
 }
 
 // ── EDITAR / EXCLUIR ──
@@ -746,7 +796,7 @@ function openEdit(id){
   document.getElementById('e-obs').value=p.obs||'';
   document.getElementById('mo-edit').classList.add('open');
 }
-function salvarEdicao(){
+async function salvarEdicao(){
   const id=parseInt(document.getElementById('e-id').value);
   const p=pedidos.find(x=>x.id===id);if(!p)return;
   const nome=document.getElementById('e-nome').value.trim();
@@ -756,11 +806,11 @@ function salvarEdicao(){
   p.cliente=nome;p.qtd=qtd;p.valor=val;
   p.pgto=document.getElementById('e-pgto').value;
   p.obs=document.getElementById('e-obs').value.trim();
-  save();closeModal('mo-edit');renderPedidos();toast('✓ Atualizado!');
+  await save();closeModal('mo-edit');renderPedidos();toast('✓ Atualizado!');
 }
-function excluir(id){
+async function excluir(id){
   if(!confirm('Excluir este pedido?'))return;
-  pedidos=pedidos.filter(x=>x.id!==id);save();renderPedidos();toast('Pedido excluído');
+  pedidos=pedidos.filter(x=>x.id!==id);await deleteRemote('orders',id);await save();renderPedidos();toast('Pedido excluído');
 }
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 
@@ -903,27 +953,28 @@ function renderConfig(){
   revs.forEach(u=>uh+=`<div class="user-item"><div class="u-left"><div class="u-av">${ini(u.name)}</div><div><div class="u-name">${u.name}</div><div class="u-meta">@${u.username} · Revendedor · ${pedidos.filter(p=>p.rev===u.id).length} pedidos</div></div></div><div class="user-actions"><button class="role-btn admin" onclick="setUserRole('${u.id}','admin')">Tornar admin</button><button class="del-btn" onclick="delUser('${u.id}')"><i class="ti ti-trash" style="font-size:15px"></i></button></div></div>`);
   document.getElementById('users-list').innerHTML=uh;
 }
-function addUser(){
+async function addUser(){
   const nome=document.getElementById('u-nome').value.trim();
   const u=document.getElementById('u-user').value.trim().toLowerCase();
   const p=document.getElementById('u-pass').value;
   if(!nome||!u||p.length<4){toast('⚠ Preencha tudo (senha mín. 4)');return}
   if(users.find(x=>x.username.toLowerCase()===u)){toast('⚠ Usuário já existe');return}
   if(users.filter(x=>x.role==='rev').length>=5){toast('⚠ Limite atingido');return}
-  users.push({id:u,name:nome,username:u,pass:p,role:'rev'});save();
+  users.push({id:u,name:nome,username:u,pass:p,passHash:await hashPass(p),role:'rev'});await save();
   ['u-nome','u-user','u-pass'].forEach(id=>document.getElementById(id).value='');
   renderConfig();toast(`✓ ${nome} adicionado!`);
 }
-function delUser(id){
+async function delUser(id){
+  if(pedidos.some(p=>p.rev===id)){toast('Esse revendedor tem pedidos. Altere para admin/revendedor, mas não remova.');return}
   if(!confirm('Remover este revendedor?'))return;
-  users=users.filter(u=>u.id!==id);save();renderConfig();toast('Removido');
+  users=users.filter(u=>u.id!==id);await deleteRemote('app_users',id);await save();renderConfig();toast('Removido');
 }
-function setUserRole(id,role){
+async function setUserRole(id,role){
   const u=users.find(x=>x.id===id);if(!u)return;
   if(role==='rev'&&users.filter(x=>x.role==='admin').length<=1){toast('Precisa manter pelo menos um admin.');return}
   if(role==='admin'&&users.filter(x=>x.role==='rev').length<=0){toast('Nenhum revendedor para promover.');return}
   u.role=role;
-  save();renderConfig();
+  await save();renderConfig();
   toast(role==='admin'?`${u.name} agora tem acesso admin.`:`${u.name} voltou para revendedor.`);
 }
 
@@ -933,12 +984,12 @@ function openModalLote(){
   ['lote-qtd','lote-obs'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('mo-lote').classList.add('open');
 }
-function salvarLote(){
+async function salvarLote(){
   const data=document.getElementById('lote-data').value||today();
   const qtd=parseInt(document.getElementById('lote-qtd').value)||0;
   if(qtd<=0){toast('Informe a quantidade.');return}
   lotes.push({id:nextLoteId++,data,qtd,obs:document.getElementById('lote-obs').value.trim()});
-  save();closeModal('mo-lote');renderConfig();renderPedidos();toast('✓ Lote cadastrado!');
+  await save();closeModal('mo-lote');renderConfig();renderPedidos();toast('✓ Lote cadastrado!');
 }
 
 // ── CSV ──
@@ -950,7 +1001,17 @@ function exportCSV(){
 }
 
 // ── INIT ──
-load();applyTheme();
+async function initApp(){
+  load();
+  if(await loadRemote()){
+    ss('0v0_backend','supabase');
+    ss('0v0_u',JSON.stringify(users));
+    ss('0v0_p',JSON.stringify(pedidos));
+    ss('0v0_l',JSON.stringify(lotes));
+  }
+  applyTheme();
+}
+initApp();
 document.querySelectorAll('.mo').forEach(mo=>mo.addEventListener('click',e=>{if(e.target===mo)mo.classList.remove('open')}));
 </script>
 </body>
