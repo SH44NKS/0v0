@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="theme-color" content="#F8FAFC" id="meta-theme">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="0v0">
 <title>0v0 – Gestão de Vendas</title>
 <link rel="icon" href="0v0-icon.jpg">
 <link rel="apple-touch-icon" href="0v0-icon.jpg">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/tabler-icons.min.css">
@@ -282,6 +284,20 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 /* EMPTY */
 .empty{text-align:center;padding:3rem 1rem;color:var(--t3);font-size:14px;display:flex;flex-direction:column;align-items:center;gap:10px}
 .empty i{font-size:44px;opacity:.35}
+
+/* INSTALL GUIDE */
+.install-card{background:var(--s);border-radius:22px 22px 0 0;padding:1.5rem 1.5rem 2rem;width:100%;max-width:480px;box-shadow:var(--shl)}
+.install-head{display:flex;align-items:center;gap:12px;margin-bottom:1rem}
+.install-head img{width:46px;height:46px;border-radius:13px;border:1px solid var(--br);padding:5px;background:#fff}
+.install-title{font-family:var(--fh);font-size:18px;font-weight:800;color:var(--t)}
+.install-sub{font-size:13px;color:var(--t2);margin-top:2px}
+.install-steps{display:flex;flex-direction:column;gap:9px;margin:1rem 0}
+.install-step{display:flex;gap:10px;align-items:flex-start;background:var(--bg);border:1px solid var(--br);border-radius:var(--rr);padding:10px 12px;font-size:14px;color:var(--t2)}
+.install-step b{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:var(--rf);background:var(--g);color:var(--gt);font-family:var(--fh);font-size:12px;flex-shrink:0}
+.install-actions{display:flex;gap:10px;margin-top:1rem}
+.install-actions button{flex:1;padding:12px;border-radius:var(--rr);font-family:var(--fh);font-size:14px;font-weight:700;cursor:pointer}
+.install-later{background:none;border:1px solid var(--br);color:var(--t2)}
+.install-ok{background:var(--g);border:1px solid var(--g);color:var(--gt)}
 </style>
 </head>
 <body>
@@ -486,6 +502,23 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="mo" id="install-guide">
+  <div class="install-card">
+    <div class="install-head">
+      <img src="0v0-icon.jpg" alt="0v0">
+      <div>
+        <div class="install-title">Instalar o 0v0</div>
+        <div class="install-sub">Use como app pela tela inicial do celular.</div>
+      </div>
+    </div>
+    <div id="install-steps" class="install-steps"></div>
+    <div class="install-actions">
+      <button class="install-later" onclick="fecharTutorialInstalacao(false)">Depois</button>
+      <button class="install-ok" onclick="fecharTutorialInstalacao(true)">Entendi</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ── STATE ──
@@ -1089,9 +1122,38 @@ async function initApp(){
     ss('0v0_l',JSON.stringify(lotes));
   }
   applyTheme();
+  mostrarTutorialInstalacao();
 }
 initApp();
 document.querySelectorAll('.mo').forEach(mo=>mo.addEventListener('click',e=>{if(e.target===mo)mo.classList.remove('open')}));
+function isStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+}
+function mostrarTutorialInstalacao(){
+  if(isStandalone()||sg('0v0_install_seen')==='1')return;
+  const ua=navigator.userAgent.toLowerCase();
+  const isIOS=/iphone|ipad|ipod/.test(ua);
+  const isAndroid=/android/.test(ua);
+  const steps=isIOS?[
+    'Toque no botão de compartilhar do Safari.',
+    'Escolha “Adicionar à Tela de Início”.',
+    'Confirme em “Adicionar”.'
+  ]:isAndroid?[
+    'Toque nos três pontinhos do Chrome.',
+    'Escolha “Adicionar à tela inicial” ou “Instalar app”.',
+    'Confirme em “Adicionar”.'
+  ]:[
+    'Abra o menu do navegador.',
+    'Procure por “Instalar app” ou “Adicionar à tela inicial”.',
+    'Confirme para criar o atalho.'
+  ];
+  document.getElementById('install-steps').innerHTML=steps.map((s,i)=>`<div class="install-step"><b>${i+1}</b><span>${s}</span></div>`).join('');
+  setTimeout(()=>document.getElementById('install-guide').classList.add('open'),700);
+}
+function fecharTutorialInstalacao(remember){
+  if(remember)ss('0v0_install_seen','1');
+  document.getElementById('install-guide').classList.remove('open');
+}
 </script>
 </body>
 </html>
