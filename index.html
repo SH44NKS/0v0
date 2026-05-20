@@ -234,6 +234,10 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 .role-btn{height:30px;padding:0 9px;border:1px solid var(--br);border-radius:var(--rr);background:var(--bg);color:var(--t2);font-family:var(--fh);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
 .role-btn.admin{background:var(--ap);border-color:#FCD34D;color:#92400E}
 .role-btn.rev{background:var(--bp);border-color:#BFDBFE;color:#1D4ED8}
+.lote-actions{display:flex;gap:8px;justify-content:flex-end}
+.lote-actions button{height:30px;padding:0 10px;border-radius:var(--rr);font-family:var(--fh);font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--br);background:var(--bg);color:var(--t2)}
+.lote-actions .edit{background:var(--bp);border-color:#BFDBFE;color:#1D4ED8}
+.lote-actions .danger{background:var(--rp);border-color:var(--r);color:var(--r)}
 .add-box{background:var(--s);border:1px dashed var(--br2);border-radius:var(--rl);padding:14px;margin-bottom:16px}
 .add-box h4{font-size:13px;font-weight:700;font-family:var(--fh);color:var(--t);margin-bottom:12px;display:flex;align-items:center;gap:6px}
 .mf{margin-bottom:10px}
@@ -444,7 +448,8 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 <div class="mo" id="mo-lote">
   <div class="modal">
     <div class="mhandle"></div>
-    <div class="mtitle">Cadastrar lote</div>
+    <div class="mtitle" id="lote-modal-title">Cadastrar lote</div>
+    <input type="hidden" id="lote-id">
     <div class="mf"><label>Data</label><input type="date" id="lote-data"></div>
     <div class="mf"><label>Quantidade</label><input type="number" id="lote-qtd" min="1" placeholder="Ex: 80"></div>
     <div class="mf"><label>Observação</label><textarea id="lote-obs" placeholder="Ex: Lote da manhã"></textarea></div>
@@ -979,12 +984,17 @@ function renderConfig(){
   let lh='';
   lotes.slice().reverse().forEach(l=>{
     const r=loteRest(l);const pct=l.qtd?Math.min(100,((l.qtd-r)/l.qtd)*100):0;
+    const usado=loteUsado(l.id);
     lh+=`<div class="lote-strip" style="margin-bottom:8px;flex-direction:column;align-items:stretch;gap:8px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div><div class="ls-label">${loteNome(l)}</div><div style="font-size:12px;color:var(--t3);margin-top:2px">${l.obs||''}</div></div>
         <span style="font-size:13px;font-weight:700;color:${r>0?'var(--gd)':'var(--t3)'}">${r} restantes</span>
       </div>
       <div class="ls-bar-wrap"><div class="ls-bar" style="flex:1"><div class="ls-fill" style="width:${pct}%"></div></div><span class="ls-qty">${l.qtd-r}/${l.qtd} usados</span></div>
+      <div class="lote-actions">
+        <button class="edit" onclick="openModalLote(${l.id})"><i class="ti ti-pencil" style="font-size:13px"></i> Editar</button>
+        <button class="danger" onclick="excluirLote(${l.id})" ${usado>0?'title="Lote com pedidos não pode ser excluído"':''}><i class="ti ti-trash" style="font-size:13px"></i> Excluir</button>
+      </div>
     </div>`;
   });
   document.getElementById('lotes-list').innerHTML=lh||'<div class="empty" style="padding:1.5rem"><i class="ti ti-package-off"></i><span>Nenhum lote cadastrado</span></div>';
@@ -1026,17 +1036,39 @@ async function setUserRole(id,role){
 }
 
 // ── LOTES ──
-function openModalLote(){
-  document.getElementById('lote-data').value=today();
-  ['lote-qtd','lote-obs'].forEach(id=>document.getElementById(id).value='');
+function openModalLote(id=null){
+  const lote=id?lotes.find(l=>l.id===id):null;
+  document.getElementById('lote-modal-title').textContent=lote?'Editar lote':'Cadastrar lote';
+  document.getElementById('lote-id').value=lote?lote.id:'';
+  document.getElementById('lote-data').value=lote?lote.data:today();
+  document.getElementById('lote-qtd').value=lote?lote.qtd:'';
+  document.getElementById('lote-obs').value=lote?(lote.obs||''):'';
   document.getElementById('mo-lote').classList.add('open');
 }
 async function salvarLote(){
+  const id=parseInt(document.getElementById('lote-id').value)||null;
   const data=document.getElementById('lote-data').value||today();
   const qtd=parseInt(document.getElementById('lote-qtd').value)||0;
   if(qtd<=0){toast('Informe a quantidade.');return}
-  lotes.push({id:nextLoteId++,data,qtd,obs:document.getElementById('lote-obs').value.trim()});
+  const obs=document.getElementById('lote-obs').value.trim();
+  if(id){
+    const lote=lotes.find(l=>l.id===id);if(!lote)return;
+    const usado=loteUsado(id);
+    if(qtd<usado){toast(`Este lote já tem ${usado} usado. A quantidade não pode ser menor.`);return}
+    lote.data=data;lote.qtd=qtd;lote.obs=obs;
+    await save();closeModal('mo-lote');renderConfig();renderPedidos();toast('✓ Lote atualizado!');
+    return;
+  }
+  lotes.push({id:nextLoteId++,data,qtd,obs});
   await save();closeModal('mo-lote');renderConfig();renderPedidos();toast('✓ Lote cadastrado!');
+}
+async function excluirLote(id){
+  const lote=lotes.find(l=>l.id===id);if(!lote)return;
+  if(pedidos.some(p=>p.loteId===id)){toast('Este lote tem pedidos vinculados e não pode ser excluído.');return}
+  if(!confirm(`Excluir ${loteNome(lote)}?`))return;
+  lotes=lotes.filter(l=>l.id!==id);
+  await deleteRemote('lots',id);
+  await save();renderConfig();renderPedidos();toast('Lote excluído.');
 }
 
 // ── CSV ──
