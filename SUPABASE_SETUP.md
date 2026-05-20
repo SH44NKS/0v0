@@ -14,7 +14,7 @@ Isso cria:
 - `lots`
 - `orders`
 - usuario admin `iuri / 1234`
-- revendedores `thaissa`, `alisson`, `nany` com senha `1234`
+- nenhum pedido, lote ou revendedor de teste
 
 ## 3. Configurar as chaves
 

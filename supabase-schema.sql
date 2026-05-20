@@ -44,27 +44,5 @@ create policy "0v0 public app write orders" on orders for all using (true) with 
 
 insert into app_users (id, name, username, pass_hash, role)
 values
-  ('iuri', 'Iuri', 'iuri', 'ebec91fc7c76e182463b7f8ea98e1745a67bcfe9ba1f92f097b845852bd0eb61', 'admin'),
-  ('thaissa', 'Thaissa', 'thaissa', 'ebec91fc7c76e182463b7f8ea98e1745a67bcfe9ba1f92f097b845852bd0eb61', 'rev'),
-  ('alisson', 'Alisson', 'alisson', 'ebec91fc7c76e182463b7f8ea98e1745a67bcfe9ba1f92f097b845852bd0eb61', 'rev'),
-  ('nany', 'Nany', 'nany', 'ebec91fc7c76e182463b7f8ea98e1745a67bcfe9ba1f92f097b845852bd0eb61', 'rev')
-on conflict (id) do nothing;
-
-insert into lots (id, data, qtd, obs)
-values
-  (1, '2026-05-15', 40, 'Lote principal'),
-  (2, '2026-04-20', 8, 'Lote anterior'),
-  (3, '2026-03-10', 2, 'Lote antigo')
-on conflict (id) do nothing;
-
-insert into orders (id, cliente, qtd, valor, desconto, status, rev, data, data_pago, pgto, obs, lote_id)
-values
-  (1, 'Mariana', 2, 50, 0, 'solicitado', 'thaissa', '2026-05-15', null, 'pix', '', null),
-  (2, 'Roberto', 4, 95, 5, 'entregue', 'alisson', '2026-05-14', null, 'dinheiro', 'Vai pagar na sexta', 1),
-  (3, 'Fernanda', 1, 25, 0, 'pago', 'thaissa', '2026-05-12', '2026-05-13', 'pix', '', 1),
-  (4, 'Joana', 3, 75, 0, 'pago', 'nany', '2026-05-08', '2026-05-09', 'dinheiro', '', 1),
-  (5, 'Beto', 2, 45, 5, 'pedido', 'thaissa', '2026-05-05', null, 'fiado', 'Pagou metade', 1),
-  (6, 'Clara', 5, 125, 0, 'pago', 'alisson', '2026-04-20', '2026-04-21', 'pix', '', 2),
-  (7, 'Larissa', 2, 50, 0, 'pago', 'nany', '2026-03-10', '2026-03-11', 'dinheiro', '', 3),
-  (8, 'Mariana', 3, 75, 0, 'pago', 'thaissa', '2026-04-28', '2026-04-29', 'pix', '', 2)
+  ('iuri', 'Iuri', 'iuri', 'ebec91fc7c76e182463b7f8ea98e1745a67bcfe9ba1f92f097b845852bd0eb61', 'admin')
 on conflict (id) do nothing;

@@ -89,6 +89,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 .ib:hover{background:var(--bg)}
 .ib i{font-size:17px}
 @media(max-width:400px){.t-badge{display:none}.ib{padding:0 8px;font-size:11px}.tb-right{gap:4px}}
+.pass-btn{background:var(--bp);border-color:#BFDBFE;color:#1D4ED8}
 
 /* NAV */
 .nav{display:flex;background:var(--s);border-bottom:1px solid var(--br)}
@@ -302,7 +303,6 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
         <div class="lf"><label>Usuário</label><input type="text" id="l-user" placeholder="Seu usuário" autocomplete="username"></div>
         <div class="lf"><label>Senha</label><input type="password" id="l-pass" placeholder="Sua senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
         <button class="lbtn" onclick="doLogin()">Entrar</button>
-        <div class="demo-hint">Admin: <code>iuri</code> / <code>1234</code> &nbsp;·&nbsp; Revendedores: <code>thaissa</code> <code>alisson</code> <code>nany</code></div>
       </div>
       <div id="l-cad" style="display:none">
         <div class="lf"><label>Nome completo</label><input type="text" id="c-nome" placeholder="Ex: Ana Lima"></div>
@@ -325,6 +325,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
       <div class="t-av" id="nav-av"></div>
       <span class="t-badge" id="nav-badge"></span>
       <button class="ib" onclick="toggleTheme()" id="th-btn"><img class="btn-ico" src="theme-icon.jpg" alt=""><span>Tema</span></button>
+      <button class="ib pass-btn" onclick="openSenhaModal()"><i class="ti ti-key"></i><span>Senha</span></button>
       <button class="ib" onclick="doLogout()" aria-label="Sair da conta"><img class="btn-ico" src="logout-icon.png" alt=""><span>Sair</span></button>
     </div>
   </div>
@@ -465,33 +466,32 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
   </div>
 </div>
 
+<!-- MODAL: SENHA -->
+<div class="mo" id="mo-senha">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="mtitle">Alterar senha</div>
+    <div class="mf"><label>Senha atual</label><input type="password" id="senha-atual" autocomplete="current-password"></div>
+    <div class="mf"><label>Nova senha</label><input type="password" id="senha-nova" autocomplete="new-password" placeholder="Mínimo 4 caracteres"></div>
+    <div class="mf"><label>Confirmar nova senha</label><input type="password" id="senha-confirma" autocomplete="new-password"></div>
+    <div class="mbtns">
+      <button class="m-cancel" onclick="closeModal('mo-senha')">Cancelar</button>
+      <button class="m-save" onclick="salvarSenha()">Salvar senha</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 // ── STATE ──
 let users=[
   {id:'iuri',name:'Iuri',username:'iuri',pass:'1234',role:'admin'},
-  {id:'thaissa',name:'Thaissa',username:'thaissa',pass:'1234',role:'rev'},
-  {id:'alisson',name:'Alisson',username:'alisson',pass:'1234',role:'rev'},
-  {id:'nany',name:'Nany',username:'nany',pass:'1234',role:'rev'},
 ];
-let pedidos=[
-  {id:1,cliente:'Mariana',qtd:2,valor:50,desconto:0,status:'solicitado',rev:'thaissa',data:'2026-05-15',pgto:'pix',obs:''},
-  {id:2,cliente:'Roberto',qtd:4,valor:95,desconto:5,status:'entregue',rev:'alisson',data:'2026-05-14',pgto:'dinheiro',obs:'Vai pagar na sexta',loteId:1},
-  {id:3,cliente:'Fernanda',qtd:1,valor:25,desconto:0,status:'pago',rev:'thaissa',data:'2026-05-12',dataPago:'2026-05-13',pgto:'pix',obs:'',loteId:1},
-  {id:4,cliente:'Joana',qtd:3,valor:75,desconto:0,status:'pago',rev:'nany',data:'2026-05-08',dataPago:'2026-05-09',pgto:'dinheiro',obs:'',loteId:1},
-  {id:5,cliente:'Beto',qtd:2,valor:45,desconto:5,status:'pedido',rev:'thaissa',data:'2026-05-05',pgto:'fiado',obs:'Pagou metade',loteId:1},
-  {id:6,cliente:'Clara',qtd:5,valor:125,desconto:0,status:'pago',rev:'alisson',data:'2026-04-20',dataPago:'2026-04-21',pgto:'pix',obs:'',loteId:2},
-  {id:7,cliente:'Larissa',qtd:2,valor:50,desconto:0,status:'pago',rev:'nany',data:'2026-03-10',dataPago:'2026-03-11',pgto:'dinheiro',obs:'',loteId:3},
-  {id:8,cliente:'Mariana',qtd:3,valor:75,desconto:0,status:'pago',rev:'thaissa',data:'2026-04-28',dataPago:'2026-04-29',pgto:'pix',obs:'',loteId:2},
-];
-let lotes=[
-  {id:1,data:'2026-05-15',qtd:40,obs:'Lote principal'},
-  {id:2,data:'2026-04-20',qtd:8,obs:'Lote anterior'},
-  {id:3,data:'2026-03-10',qtd:2,obs:'Lote antigo'},
-];
-let nextId=9,nextLoteId=4,curUser=null,filtro='todos',periodo='semana',histCliente=null;
-const PRECO=25,VER='0v0-manual-base-v1';
+let pedidos=[];
+let lotes=[];
+let nextId=1,nextLoteId=1,curUser=null,filtro='todos',periodo='semana',histCliente=null;
+const PRECO=25,VER='0v0-real-clean-v1';
 const BACKEND=window.OVO_CONFIG||{};
 const sbReady=Boolean(BACKEND.SUPABASE_URL&&BACKEND.SUPABASE_ANON_KEY&&window.supabase);
 const sb=sbReady?window.supabase.createClient(BACKEND.SUPABASE_URL,BACKEND.SUPABASE_ANON_KEY):null;
@@ -621,6 +621,27 @@ function enterDash(user){
   showScreen('s-dash');goTab('pedidos');
 }
 function doLogout(){curUser=null;['l-user','l-pass'].forEach(id=>document.getElementById(id).value='');document.getElementById('l-err').style.display='none';showScreen('s-login')}
+function openSenhaModal(){
+  ['senha-atual','senha-nova','senha-confirma'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mo-senha').classList.add('open');
+}
+async function salvarSenha(){
+  if(!curUser)return;
+  const atual=document.getElementById('senha-atual').value;
+  const nova=document.getElementById('senha-nova').value;
+  const confirma=document.getElementById('senha-confirma').value;
+  if(nova.length<4){toast('A nova senha precisa ter pelo menos 4 caracteres.');return}
+  if(nova!==confirma){toast('A confirmação não confere.');return}
+  const atualOk=remoteMode?curUser.passHash===await hashPass(atual):curUser.pass===atual;
+  if(!atualOk){toast('Senha atual incorreta.');return}
+  curUser.pass=nova;
+  curUser.passHash=await hashPass(nova);
+  const u=users.find(x=>x.id===curUser.id);
+  if(u){u.pass=nova;u.passHash=curUser.passHash}
+  await save();
+  closeModal('mo-senha');
+  toast('Senha alterada!');
+}
 
 // ── NAV ──
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
