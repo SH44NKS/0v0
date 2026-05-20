@@ -68,6 +68,8 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 .demo-hint{margin-top:1.25rem;font-size:12px;color:var(--t3);text-align:center;line-height:1.7}
 .demo-hint code{background:var(--bg);border:1px solid var(--br);border-radius:5px;padding:1px 6px;font-size:11px;color:var(--t2);font-family:monospace}
 .theme-float{position:fixed;top:14px;right:14px;z-index:99;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--s);border:1px solid var(--br);border-radius:var(--rr);cursor:pointer;color:var(--t2);box-shadow:var(--sh);transition:.15s}
+.theme-float img,.btn-ico{width:18px;height:18px;object-fit:contain;display:block;mix-blend-mode:multiply}
+:root[data-theme=dark] .theme-float img,:root[data-theme=dark] .btn-ico,:root[data-theme=dark] .stock-ico{filter:invert(1);mix-blend-mode:screen}
 
 /* TOPBAR */
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--s);border-bottom:1px solid var(--br);position:sticky;top:0;z-index:50}
@@ -110,6 +112,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 .ls-left{display:flex;align-items:center;gap:8px;min-width:0}
 .ls-icon{width:32px;height:32px;border-radius:var(--rr);background:var(--gp);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .ls-icon i{font-size:17px;color:var(--gd)}
+.stock-ico{width:19px;height:19px;object-fit:contain;display:block;mix-blend-mode:multiply}
 .ls-info{min-width:0}
 .ls-label{font-size:12px;font-weight:600;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ls-bar-wrap{display:flex;align-items:center;gap:6px;margin-top:4px}
@@ -225,6 +228,10 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 .u-meta{font-size:12px;color:var(--t3);margin-top:1px}
 .del-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:var(--rp);border:1px solid var(--r);border-radius:var(--rr);cursor:pointer;color:var(--r);transition:.15s}
 .del-btn:hover{background:var(--r);color:#fff}
+.user-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.role-btn{height:30px;padding:0 9px;border:1px solid var(--br);border-radius:var(--rr);background:var(--bg);color:var(--t2);font-family:var(--fh);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+.role-btn.admin{background:var(--ap);border-color:#FCD34D;color:#92400E}
+.role-btn.rev{background:var(--bp);border-color:#BFDBFE;color:#1D4ED8}
 .add-box{background:var(--s);border:1px dashed var(--br2);border-radius:var(--rl);padding:14px;margin-bottom:16px}
 .add-box h4{font-size:13px;font-weight:700;font-family:var(--fh);color:var(--t);margin-bottom:12px;display:flex;align-items:center;gap:6px}
 .mf{margin-bottom:10px}
@@ -276,7 +283,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 
 <!-- LOGIN -->
 <div class="screen active" id="s-login">
-  <button class="theme-float" onclick="toggleTheme()" id="th-float"><i class="ti ti-moon"></i></button>
+  <button class="theme-float" onclick="toggleTheme()" id="th-float"><img src="theme-icon.jpg" alt="Tema"></button>
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;width:100%">
     <div class="login-brand">
       <div class="login-logo"><img src="0v0-icon.jpg" alt="0v0" onerror="this.parentElement.innerHTML='<i class=ti ti-egg style=font-size:36px;color:var(--g)></i>'"></div>
@@ -315,8 +322,8 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
     <div class="tb-right">
       <div class="t-av" id="nav-av"></div>
       <span class="t-badge" id="nav-badge"></span>
-      <button class="ib" onclick="toggleTheme()" id="th-btn"><i class="ti ti-moon"></i><span>Tema</span></button>
-      <button class="ib" onclick="doLogout()" aria-label="Sair da conta"><i class="ti ti-logout"></i><span>Sair</span></button>
+      <button class="ib" onclick="toggleTheme()" id="th-btn"><img class="btn-ico" src="theme-icon.jpg" alt=""><span>Tema</span></button>
+      <button class="ib" onclick="doLogout()" aria-label="Sair da conta"><img class="btn-ico" src="logout-icon.png" alt=""><span>Sair</span></button>
     </div>
   </div>
   <div class="nav">
@@ -367,7 +374,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
     <div id="tc-config" style="display:none">
       <div class="slabel" style="margin-top:0">Estoque / Lotes</div>
       <div id="lotes-list"></div>
-      <button class="fab" style="margin-bottom:20px" onclick="openModalLote()"><i class="ti ti-package"></i> Cadastrar lote</button>
+      <button class="fab" style="margin-bottom:20px" onclick="openModalLote()"><img class="btn-ico" src="stock-icon.jpg" alt=""> Cadastrar lote</button>
       <div class="slabel">Revendedores</div>
       <div class="add-box">
         <h4><i class="ti ti-user-plus" style="font-size:15px"></i> Adicionar revendedor</h4>
@@ -522,9 +529,9 @@ function applyTheme(){
   document.documentElement.setAttribute('data-theme',theme);
   document.getElementById('meta-theme').content=theme==='dark'?'#0A0F1E':'#F8FAFC';
   const dashBtn=document.getElementById('th-btn');
-  if(dashBtn)dashBtn.innerHTML=`<i class="ti ${theme==='dark'?'ti-sun':'ti-moon'}"></i><span>${theme==='dark'?'Claro':'Tema'}</span>`;
+  if(dashBtn)dashBtn.innerHTML=`<img class="btn-ico" src="theme-icon.jpg" alt=""><span>${theme==='dark'?'Claro':'Tema'}</span>`;
   const floatBtn=document.getElementById('th-float');
-  if(floatBtn)floatBtn.innerHTML=`<i class="ti ${theme==='dark'?'ti-sun':'ti-moon'}" style="font-size:17px"></i>`;
+  if(floatBtn)floatBtn.innerHTML=`<img src="theme-icon.jpg" alt="Tema">`;
 }
 function toggleTheme(){theme=theme==='dark'?'light':'dark';ss('0v0_theme',theme);applyTheme()}
 
@@ -589,14 +596,14 @@ function renderLoteStrip(){
   if(curUser.role!=='admin'){
     const r=la?loteRest(la):0;
     strip.innerHTML=r>0
-      ?`<div class="lote-strip"><div class="ls-left"><div class="ls-icon"><i class="ti ti-package"></i></div><div class="ls-info"><div class="ls-label">${loteNome(la)}</div><div class="ls-bar-wrap"><div class="ls-bar"><div class="ls-fill" style="width:${Math.min(100,((la.qtd-r)/la.qtd)*100)}%"></div></div><span class="ls-qty">${r} restantes</span></div></div></div></div>`
+      ?`<div class="lote-strip"><div class="ls-left"><div class="ls-icon"><img class="stock-ico" src="stock-icon.jpg" alt=""></div><div class="ls-info"><div class="ls-label">${loteNome(la)}</div><div class="ls-bar-wrap"><div class="ls-bar"><div class="ls-fill" style="width:${Math.min(100,((la.qtd-r)/la.qtd)*100)}%"></div></div><span class="ls-qty">${r} restantes</span></div></div></div></div>`
       :`<div class="lote-empty"><i class="ti ti-alert-triangle" style="font-size:18px"></i><span>Sem estoque disponível</span></div>`;
     return;
   }
   if(!la){strip.innerHTML=`<div class="lote-empty"><i class="ti ti-alert-triangle" style="font-size:18px"></i><span>Nenhum lote ativo — <b onclick="goTab('config')" style="cursor:pointer;text-decoration:underline">cadastre um lote</b></span></div>`;return}
   const r=loteRest(la);const pct=la.qtd?Math.min(100,((la.qtd-r)/la.qtd)*100):0;
   const fila=lotes.slice().sort((a,b)=>a.id-b.id).filter(l=>l.id!==la.id&&loteRest(l)>0);
-  strip.innerHTML=`<div class="lote-strip"><div class="ls-left"><div class="ls-icon"><i class="ti ti-package"></i></div><div class="ls-info"><div class="ls-label">${loteNome(la)}${fila.length?` · +${fila.length} na fila`:''}</div><div class="ls-bar-wrap"><div class="ls-bar"><div class="ls-fill" style="width:${pct}%"></div></div><span class="ls-qty">${r} / ${la.qtd} restantes</span></div></div></div><button class="ls-btn" onclick="goTab('config')">Lotes</button></div>`;
+  strip.innerHTML=`<div class="lote-strip"><div class="ls-left"><div class="ls-icon"><img class="stock-ico" src="stock-icon.jpg" alt=""></div><div class="ls-info"><div class="ls-label">${loteNome(la)}${fila.length?` · +${fila.length} na fila`:''}</div><div class="ls-bar-wrap"><div class="ls-bar"><div class="ls-fill" style="width:${pct}%"></div></div><span class="ls-qty">${r} / ${la.qtd} restantes</span></div></div></div><button class="ls-btn" onclick="goTab('config')">Lotes</button></div>`;
 }
 
 const spClass=s=>({solicitado:'sp-sol',pedido:'sp-ped',entregue:'sp-ent',pago:'sp-pag'}[s]||'sp-ped');
@@ -884,12 +891,16 @@ function renderConfig(){
     </div>`;
   });
   document.getElementById('lotes-list').innerHTML=lh||'<div class="empty" style="padding:1.5rem"><i class="ti ti-package-off"></i><span>Nenhum lote cadastrado</span></div>';
+  const admins=users.filter(u=>u.role==='admin');
   const revs=users.filter(u=>u.role==='rev');
-  const adm=users.find(u=>u.role==='admin');
   document.getElementById('cap-warn').style.display=revs.length>=5?'flex':'none';
-  let uh=`<div class="user-item" style="margin-bottom:16px"><div class="u-left"><div class="u-av adm">${ini(adm.name)}</div><div><div class="u-name">${adm.name}</div><div class="u-meta">@${adm.username} · Admin</div></div></div></div>`;
+  let uh='';
+  admins.forEach(u=>{
+    const canDemote=admins.length>1&&u.id!==curUser.id;
+    uh+=`<div class="user-item" style="margin-bottom:8px"><div class="u-left"><div class="u-av adm">${ini(u.name)}</div><div><div class="u-name">${u.name}</div><div class="u-meta">@${u.username} · Admin</div></div></div><div class="user-actions">${canDemote?`<button class="role-btn rev" onclick="setUserRole('${u.id}','rev')">Virar revendedor</button>`:''}</div></div>`;
+  });
   if(!revs.length)uh+=`<div class="empty" style="padding:1.5rem"><i class="ti ti-user-off"></i><span>Nenhum revendedor ainda</span></div>`;
-  revs.forEach(u=>uh+=`<div class="user-item"><div class="u-left"><div class="u-av">${ini(u.name)}</div><div><div class="u-name">${u.name}</div><div class="u-meta">@${u.username} (${pedidos.filter(p=>p.rev===u.id).length} pedidos)</div></div></div><button class="del-btn" onclick="delUser('${u.id}')"><i class="ti ti-trash" style="font-size:15px"></i></button></div>`);
+  revs.forEach(u=>uh+=`<div class="user-item"><div class="u-left"><div class="u-av">${ini(u.name)}</div><div><div class="u-name">${u.name}</div><div class="u-meta">@${u.username} · Revendedor · ${pedidos.filter(p=>p.rev===u.id).length} pedidos</div></div></div><div class="user-actions"><button class="role-btn admin" onclick="setUserRole('${u.id}','admin')">Tornar admin</button><button class="del-btn" onclick="delUser('${u.id}')"><i class="ti ti-trash" style="font-size:15px"></i></button></div></div>`);
   document.getElementById('users-list').innerHTML=uh;
 }
 function addUser(){
@@ -906,6 +917,14 @@ function addUser(){
 function delUser(id){
   if(!confirm('Remover este revendedor?'))return;
   users=users.filter(u=>u.id!==id);save();renderConfig();toast('Removido');
+}
+function setUserRole(id,role){
+  const u=users.find(x=>x.id===id);if(!u)return;
+  if(role==='rev'&&users.filter(x=>x.role==='admin').length<=1){toast('Precisa manter pelo menos um admin.');return}
+  if(role==='admin'&&users.filter(x=>x.role==='rev').length<=0){toast('Nenhum revendedor para promover.');return}
+  u.role=role;
+  save();renderConfig();
+  toast(role==='admin'?`${u.name} agora tem acesso admin.`:`${u.name} voltou para revendedor.`);
 }
 
 // ── LOTES ──
