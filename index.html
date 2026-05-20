@@ -81,9 +81,10 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 .t-badge{font-size:10px;padding:2px 8px;border-radius:var(--rf);font-weight:700;font-family:var(--fh);letter-spacing:.04em}
 .tb-adm{background:var(--ap);color:#92400E}
 .tb-rev{background:var(--bp);color:#1D4ED8}
-.ib{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:none;border:1px solid var(--br);border-radius:var(--rr);cursor:pointer;color:var(--t2);transition:.15s}
+.ib{height:34px;min-width:34px;padding:0 10px;display:flex;align-items:center;justify-content:center;gap:5px;background:none;border:1px solid var(--br);border-radius:var(--rr);cursor:pointer;color:var(--t2);transition:.15s;font-family:var(--fh);font-size:12px;font-weight:700}
 .ib:hover{background:var(--bg)}
-@media(max-width:400px){.t-badge{display:none}}
+.ib i{font-size:17px}
+@media(max-width:400px){.t-badge{display:none}.ib{padding:0 8px;font-size:11px}.tb-right{gap:4px}}
 
 /* NAV */
 .nav{display:flex;background:var(--s);border-bottom:1px solid var(--br)}
@@ -314,8 +315,8 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
     <div class="tb-right">
       <div class="t-av" id="nav-av"></div>
       <span class="t-badge" id="nav-badge"></span>
-      <button class="ib" onclick="toggleTheme()" id="th-btn"><i class="ti ti-moon" style="font-size:17px"></i></button>
-      <button class="ib" onclick="doLogout()"><i class="ti ti-logout" style="font-size:17px"></i></button>
+      <button class="ib" onclick="toggleTheme()" id="th-btn"><i class="ti ti-moon"></i><span>Tema</span></button>
+      <button class="ib" onclick="doLogout()" aria-label="Sair da conta"><i class="ti ti-logout"></i><span>Sair</span></button>
     </div>
   </div>
   <div class="nav">
@@ -520,7 +521,10 @@ let theme=sg('0v0_theme')||'light';
 function applyTheme(){
   document.documentElement.setAttribute('data-theme',theme);
   document.getElementById('meta-theme').content=theme==='dark'?'#0A0F1E':'#F8FAFC';
-  ['th-btn','th-float'].forEach(id=>{const b=document.getElementById(id);if(b)b.innerHTML=`<i class="ti ${theme==='dark'?'ti-sun':'ti-moon'}" style="font-size:17px"></i>`});
+  const dashBtn=document.getElementById('th-btn');
+  if(dashBtn)dashBtn.innerHTML=`<i class="ti ${theme==='dark'?'ti-sun':'ti-moon'}"></i><span>${theme==='dark'?'Claro':'Tema'}</span>`;
+  const floatBtn=document.getElementById('th-float');
+  if(floatBtn)floatBtn.innerHTML=`<i class="ti ${theme==='dark'?'ti-sun':'ti-moon'}" style="font-size:17px"></i>`;
 }
 function toggleTheme(){theme=theme==='dark'?'light':'dark';ss('0v0_theme',theme);applyTheme()}
 
