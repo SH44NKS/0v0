@@ -11,7 +11,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/tabler-icons.min.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <style>
 :root{
@@ -493,8 +492,8 @@ let lotes=[];
 let nextId=1,nextLoteId=1,curUser=null,filtro='todos',periodo='semana',histCliente=null;
 const PRECO=25,VER='0v0-real-clean-v1';
 const BACKEND=window.OVO_CONFIG||{};
-const sbReady=Boolean(BACKEND.SUPABASE_URL&&BACKEND.SUPABASE_ANON_KEY&&window.supabase);
-const sb=sbReady?window.supabase.createClient(BACKEND.SUPABASE_URL,BACKEND.SUPABASE_ANON_KEY):null;
+const sbReady=Boolean(BACKEND.SUPABASE_URL&&BACKEND.SUPABASE_ANON_KEY);
+const apiBase=sbReady?`${BACKEND.SUPABASE_URL.replace(/\/$/,'')}/rest/v1`:null;
 let remoteMode=false;
 
 // ── HELPERS ──
@@ -530,15 +529,41 @@ function toDbLot(l){return {id:l.id,data:l.data,qtd:l.qtd,obs:l.obs||''}}
 function fromDbLot(l){return {id:l.id,data:l.data,qtd:l.qtd,obs:l.obs||''}}
 function toDbUser(u){return {id:u.id,name:u.name,username:u.username,role:u.role,pass_hash:u.passHash||u.pass_hash||''}}
 function fromDbUser(u){return {id:u.id,name:u.name,username:u.username,role:u.role,passHash:u.pass_hash}}
+async function api(path,options={}){
+  const res=await fetch(`${apiBase}${path}`,{
+    ...options,
+    headers:{
+      apikey:BACKEND.SUPABASE_ANON_KEY,
+      Authorization:`Bearer ${BACKEND.SUPABASE_ANON_KEY}`,
+      'Content-Type':'application/json',
+      ...(options.headers||{})
+    }
+  });
+  if(!res.ok)throw new Error(await res.text());
+  if(res.status===204)return null;
+  const text=await res.text();
+  return text?JSON.parse(text):null;
+}
+async function selectTable(table){
+  return await api(`/${table}?select=*`);
+}
+async function upsertTable(table,rows){
+  if(!rows.length)return;
+  await api(`/${table}?on_conflict=id`,{
+    method:'POST',
+    headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify(rows)
+  });
+}
 async function save(){
   ss('0v0_u',JSON.stringify(users));ss('0v0_p',JSON.stringify(pedidos));ss('0v0_l',JSON.stringify(lotes));ss('0v0_ni',nextId);ss('0v0_nl',nextLoteId);
   if(!remoteMode)return;
   const userRows=users.map(toDbUser).filter(u=>u.pass_hash);
   const lotRows=lotes.map(toDbLot);
   const orderRows=pedidos.map(toDbOrder);
-  if(userRows.length)await sb.from('app_users').upsert(userRows);
-  if(lotRows.length)await sb.from('lots').upsert(lotRows);
-  if(orderRows.length)await sb.from('orders').upsert(orderRows);
+  await upsertTable('app_users',userRows);
+  await upsertTable('lots',lotRows);
+  await upsertTable('orders',orderRows);
 }
 function load(){
   if(sg('0v0_ver')!==VER){save();ss('0v0_ver',VER);return}
@@ -547,22 +572,23 @@ function load(){
 }
 async function loadRemote(){
   if(!sbReady)return false;
-  const [u,p,l]=await Promise.all([
-    sb.from('app_users').select('*').order('created_at',{ascending:true}),
-    sb.from('orders').select('*').order('id',{ascending:true}),
-    sb.from('lots').select('*').order('id',{ascending:true})
-  ]);
-  if(u.error||p.error||l.error){console.warn('Supabase indisponivel',u.error||p.error||l.error);return false}
-  users=(u.data||[]).map(fromDbUser);
-  pedidos=(p.data||[]).map(fromDbOrder);
-  lotes=(l.data||[]).map(fromDbLot);
+  let u,p,l;
+  try{
+    [u,p,l]=await Promise.all([selectTable('app_users'),selectTable('orders'),selectTable('lots')]);
+  }catch(err){
+    console.warn('Supabase indisponivel',err);
+    return false;
+  }
+  users=(u||[]).map(fromDbUser);
+  pedidos=(p||[]).map(fromDbOrder).sort((a,b)=>a.id-b.id);
+  lotes=(l||[]).map(fromDbLot).sort((a,b)=>a.id-b.id);
   nextId=(Math.max(0,...pedidos.map(x=>x.id))+1)||1;
   nextLoteId=(Math.max(0,...lotes.map(x=>x.id))+1)||1;
   remoteMode=true;
   return true;
 }
 async function deleteRemote(table,id){
-  if(remoteMode)await sb.from(table).delete().eq('id',id);
+  if(remoteMode)await api(`/${table}?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
 }
 function filterByPeriod(list,f){
   const now=new Date();
