@@ -63,7 +63,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 .lf input{width:100%;padding:11px 14px;background:var(--bg);border:1px solid var(--br);border-radius:var(--rr);color:var(--t);font-size:15px;font-family:var(--fb);outline:none;transition:.2s}
 .lf input:focus{border-color:var(--g);background:var(--s)}
 .lf input::placeholder{color:var(--t3)}
-.lerr{font-size:13px;color:var(--r);background:var(--rp);border:1px solid rgba(239,68,68,.25);border-radius:var(--rr);padding:9px 12px;margin-bottom:1rem;display:none}
+.lerr{font-size:13px;color:var(--r);background:var(--rp);border:1px solid rgba(239,68,68,.25);border-radius:var(--rr);padding:9px 12px;margin-top:1rem;display:none}
 .lbtn{width:100%;padding:13px;background:var(--g);color:var(--gt);border:none;border-radius:var(--rr);font-size:15px;font-weight:700;font-family:var(--fh);cursor:pointer;letter-spacing:.03em;transition:.15s}
 .lbtn:active{transform:scale(.98)}
 .demo-hint{margin-top:1.25rem;font-size:12px;color:var(--t3);text-align:center;line-height:1.7}
@@ -301,7 +301,6 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
         <div class="ltab on" onclick="loginTab('login',this)">Entrar</div>
         <div class="ltab" onclick="loginTab('cad',this)">Criar conta</div>
       </div>
-      <div id="l-err" class="lerr"></div>
       <div id="l-form">
         <div class="lf"><label>Usuário</label><input type="text" id="l-user" placeholder="Seu usuário" autocomplete="username"></div>
         <div class="lf"><label>Senha</label><input type="password" id="l-pass" placeholder="Sua senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
@@ -313,6 +312,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
         <div class="lf"><label>Senha</label><input type="password" id="c-pass" placeholder="Mínimo 4 caracteres" autocomplete="new-password"></div>
         <button class="lbtn" onclick="doRegister()">Criar conta de revendedor</button>
       </div>
+      <div id="l-err" class="lerr"></div>
     </div>
   </div>
 </div>
@@ -628,7 +628,7 @@ async function doLogin(){
   const p=document.getElementById('l-pass').value;
   const passHash=await hashPass(p);
   const f=users.find(x=>x.username.toLowerCase()===u&&(remoteMode?x.passHash===passHash:x.pass===p));
-  if(!f){showErr('Usuário ou senha incorretos.');return}
+  if(!f){showErr('Login ou senha inválida.');return}
   enterDash(f);
 }
 async function doRegister(){
@@ -764,7 +764,7 @@ function renderPedidos(){
           <div class="pd-item"><div class="pd-lbl">Status</div><div class="pd-val"><span class="sp ${spClass(p.status)}">${spLabel(p.status)}</span></div></div>
           ${is_admin?`<div class="pd-item"><div class="pd-lbl">Valor</div><div class="pd-val">${R$(p.valor)}${p.desconto?` <span style="font-size:11px;color:var(--t3)">(-${R$(p.desconto)})</span>`:''}</div></div>`:''}
           <div class="pd-item"><div class="pd-lbl">Pagamento</div><div class="pd-val"><span class="pp ${pgtoClass(p.pgto)}">${pgtoLabel(p.pgto)}</span></div></div>
-          ${lote?`<div class="pd-item"><div class="pd-lbl">Lote</div><div class="pd-val">${loteNome(lote)}</div></div>`:'<div class="pd-item"><div class="pd-lbl">Data</div><div class="pd-val">${fmtFull(p.data)}</div></div>'}
+          ${lote?`<div class="pd-item"><div class="pd-lbl">Lote</div><div class="pd-val">${loteNome(lote)}</div></div>`:`<div class="pd-item"><div class="pd-lbl">Data</div><div class="pd-val">${fmtFull(p.data)}</div></div>`}
           ${is_admin?`<div class="pd-item"><div class="pd-lbl">Revendedor</div><div class="pd-val">${revName(p.rev)}</div></div>`:''}
           ${lote?`<div class="pd-item"><div class="pd-lbl">Data</div><div class="pd-val">${fmtFull(p.data)}</div></div>`:''}
         </div>
