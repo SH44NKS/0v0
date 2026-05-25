@@ -31,9 +31,26 @@ create table if not exists orders (
   created_at timestamptz not null default now()
 );
 
+create table if not exists recurring_orders (
+  id bigint primary key,
+  cliente text not null,
+  qtd integer not null check (qtd > 0),
+  valor numeric(12,2) not null default 0,
+  desconto numeric(12,2) not null default 0,
+  rev text not null references app_users(id) on update cascade,
+  pgto text not null default 'pix',
+  obs text default '',
+  freq text not null check (freq in ('diario', 'semanal', 'mensal')),
+  dia_semana integer check (dia_semana between 0 and 6),
+  dia_mes integer check (dia_mes between 1 and 31),
+  ativo boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
 alter table app_users enable row level security;
 alter table lots enable row level security;
 alter table orders enable row level security;
+alter table recurring_orders enable row level security;
 
 create policy "0v0 public app read users" on app_users for select using (true);
 create policy "0v0 public app write users" on app_users for all using (true) with check (true);
@@ -41,6 +58,8 @@ create policy "0v0 public app read lots" on lots for select using (true);
 create policy "0v0 public app write lots" on lots for all using (true) with check (true);
 create policy "0v0 public app read orders" on orders for select using (true);
 create policy "0v0 public app write orders" on orders for all using (true) with check (true);
+create policy "0v0 public app read recurring" on recurring_orders for select using (true);
+create policy "0v0 public app write recurring" on recurring_orders for all using (true) with check (true);
 
 insert into app_users (id, name, username, pass_hash, role)
 values

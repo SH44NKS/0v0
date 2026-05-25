@@ -397,6 +397,8 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
       <div class="slabel" style="margin-top:0">Estoque / Lotes</div>
       <div id="lotes-list"></div>
       <button class="fab" style="margin-bottom:20px" onclick="openModalLote()"><img class="btn-ico" src="stock-icon.jpg" alt=""> Cadastrar lote</button>
+      <div class="slabel">Pedidos programados</div>
+      <div id="programacoes-list"></div>
       <div class="slabel">Revendedores</div>
       <div class="add-box">
         <h4><i class="ti ti-user-plus" style="font-size:15px"></i> Adicionar revendedor</h4>
@@ -422,6 +424,29 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
     <div class="mrow">
       <div class="mf"><label>Quantidade</label><input type="number" id="m-qtd" placeholder="0" min="1" oninput="calcTotal()"></div>
       <div class="mf"><label>Desconto (R$)</label><input type="number" id="m-desc" placeholder="0,00" min="0" step="0.50" oninput="calcTotal()"></div>
+    </div>
+    <div class="mf"><label>Tipo de pedido</label>
+      <select id="m-tipo" onchange="togglePedidoProgramado()">
+        <option value="avulso">Avulso</option>
+        <option value="programado">Programado</option>
+      </select>
+    </div>
+    <div id="prog-fields" style="display:none">
+      <div class="mrow">
+        <div class="mf"><label>Repetição</label>
+          <select id="m-freq" onchange="togglePedidoProgramado()">
+            <option value="diario">Diário</option>
+            <option value="semanal">Semanal</option>
+            <option value="mensal">Mensal</option>
+          </select>
+        </div>
+        <div class="mf" id="m-weekday-field"><label>Dia da semana</label>
+          <select id="m-weekday">
+            <option value="1">Segunda</option><option value="2">Terça</option><option value="3">Quarta</option><option value="4">Quinta</option><option value="5">Sexta</option><option value="6">Sábado</option><option value="0">Domingo</option>
+          </select>
+        </div>
+        <div class="mf" id="m-monthday-field" style="display:none"><label>Dia do mês</label><input type="number" id="m-monthday" min="1" max="31" value="1"></div>
+      </div>
     </div>
     <div class="calc-preview"><span>Total do pedido</span><strong id="m-total">R$ 0,00</strong></div>
     <div class="mrow">
@@ -527,12 +552,14 @@ let users=[
 ];
 let pedidos=[];
 let lotes=[];
-let nextId=1,nextLoteId=1,curUser=null,filtro='todos',periodo='semana',histCliente=null;
+let programacoes=[];
+let nextId=1,nextLoteId=1,nextProgId=1,curUser=null,filtro='todos',periodo='semana',histCliente=null;
 const PRECO=25,VER='0v0-real-clean-v1';
 const BACKEND=window.OVO_CONFIG||{};
 const sbReady=Boolean(BACKEND.SUPABASE_URL&&BACKEND.SUPABASE_ANON_KEY);
 const apiBase=sbReady?`${BACKEND.SUPABASE_URL.replace(/\/$/,'')}/rest/v1`:null;
 let remoteMode=false;
+let recurringReady=false;
 
 // ── HELPERS ──
 const ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
@@ -548,6 +575,7 @@ const loteRest=l=>Math.max(0,(l?.qtd||0)-loteUsado(l?.id));
 const loteAtivo=()=>lotes.slice().sort((a,b)=>a.id-b.id).find(l=>loteRest(l)>0)||null;
 const loteNome=l=>l?`Lote ${fmtFull(l.data)}`:'Sem lote';
 const myPedidos=()=>curUser.role==='admin'?pedidos:pedidos.filter(p=>p.rev===curUser.id);
+const freqLabel=p=>p.freq==='diario'?'Diário':p.freq==='semanal'?`Semanal (${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][p.diaSemana]})`:`Mensal (dia ${p.diaMes})`;
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2300)}
 function sg(k){try{return localStorage.getItem(k)}catch{return null}}
@@ -567,6 +595,8 @@ function toDbLot(l){return {id:l.id,data:l.data,qtd:l.qtd,obs:l.obs||''}}
 function fromDbLot(l){return {id:l.id,data:l.data,qtd:l.qtd,obs:l.obs||''}}
 function toDbUser(u){return {id:u.id,name:u.name,username:u.username,role:u.role,pass_hash:u.passHash||u.pass_hash||''}}
 function fromDbUser(u){return {id:u.id,name:u.name,username:u.username,role:u.role,passHash:u.pass_hash}}
+function toDbProg(p){return {id:p.id,cliente:p.cliente,qtd:p.qtd,valor:p.valor,desconto:p.desconto||0,rev:p.rev,pgto:p.pgto||'pix',obs:p.obs||'',freq:p.freq,dia_semana:p.diaSemana??null,dia_mes:p.diaMes??null,ativo:p.ativo!==false}}
+function fromDbProg(p){return {id:p.id,cliente:p.cliente,qtd:p.qtd,valor:Number(p.valor)||0,desconto:Number(p.desconto)||0,rev:p.rev,pgto:p.pgto||'pix',obs:p.obs||'',freq:p.freq,diaSemana:p.dia_semana,diaMes:p.dia_mes,ativo:p.ativo!==false}}
 async function api(path,options={}){
   const res=await fetch(`${apiBase}${path}`,{
     ...options,
@@ -594,25 +624,28 @@ async function upsertTable(table,rows){
   });
 }
 async function save(){
-  ss('0v0_u',JSON.stringify(users));ss('0v0_p',JSON.stringify(pedidos));ss('0v0_l',JSON.stringify(lotes));ss('0v0_ni',nextId);ss('0v0_nl',nextLoteId);
+  ss('0v0_u',JSON.stringify(users));ss('0v0_p',JSON.stringify(pedidos));ss('0v0_l',JSON.stringify(lotes));ss('0v0_prog',JSON.stringify(programacoes));ss('0v0_ni',nextId);ss('0v0_nl',nextLoteId);ss('0v0_np',nextProgId);
   if(!remoteMode)return;
   const userRows=users.map(toDbUser).filter(u=>u.pass_hash);
   const lotRows=lotes.map(toDbLot);
   const orderRows=pedidos.map(toDbOrder);
+  const progRows=programacoes.map(toDbProg);
   await upsertTable('app_users',userRows);
   await upsertTable('lots',lotRows);
   await upsertTable('orders',orderRows);
+  if(recurringReady)await upsertTable('recurring_orders',progRows);
 }
 function load(){
   if(sg('0v0_ver')!==VER){save();ss('0v0_ver',VER);return}
-  const u=sg('0v0_u'),p=sg('0v0_p'),l=sg('0v0_l');
-  if(u&&p&&l){users=JSON.parse(u);pedidos=JSON.parse(p);lotes=JSON.parse(l);nextId=+sg('0v0_ni')||nextId;nextLoteId=+sg('0v0_nl')||nextLoteId}
+  const u=sg('0v0_u'),p=sg('0v0_p'),l=sg('0v0_l'),pr=sg('0v0_prog');
+  if(u&&p&&l){users=JSON.parse(u);pedidos=JSON.parse(p);lotes=JSON.parse(l);programacoes=pr?JSON.parse(pr):[];nextId=+sg('0v0_ni')||nextId;nextLoteId=+sg('0v0_nl')||nextLoteId;nextProgId=+sg('0v0_np')||nextProgId}
 }
 async function loadRemote(){
   if(!sbReady)return false;
-  let u,p,l;
+  let u,p,l,pr=[];
   try{
     [u,p,l]=await Promise.all([selectTable('app_users'),selectTable('orders'),selectTable('lots')]);
+    try{pr=await selectTable('recurring_orders');recurringReady=true}catch(err){pr=[];recurringReady=false;console.warn('Tabela recurring_orders indisponivel',err)}
   }catch(err){
     console.warn('Supabase indisponivel',err);
     return false;
@@ -620,13 +653,35 @@ async function loadRemote(){
   users=(u||[]).map(fromDbUser);
   pedidos=(p||[]).map(fromDbOrder).sort((a,b)=>a.id-b.id);
   lotes=(l||[]).map(fromDbLot).sort((a,b)=>a.id-b.id);
+  programacoes=(pr||[]).map(fromDbProg).sort((a,b)=>a.id-b.id);
   nextId=(Math.max(0,...pedidos.map(x=>x.id))+1)||1;
   nextLoteId=(Math.max(0,...lotes.map(x=>x.id))+1)||1;
+  nextProgId=(Math.max(0,...programacoes.map(x=>x.id))+1)||1;
   remoteMode=true;
   return true;
 }
 async function deleteRemote(table,id){
   if(remoteMode)await api(`/${table}?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
+}
+function programacaoVenceHoje(p){
+  const d=new Date();
+  if(p.freq==='diario')return true;
+  if(p.freq==='semanal')return d.getDay()===Number(p.diaSemana);
+  if(p.freq==='mensal')return d.getDate()===Number(p.diaMes);
+  return false;
+}
+async function gerarPedidosProgramados(shouldSave=true){
+  const data=today();
+  let criou=0;
+  programacoes.filter(p=>p.ativo!==false&&programacaoVenceHoje(p)).forEach(p=>{
+    const marca=`Programado #${p.id}`;
+    const jaExiste=pedidos.some(o=>o.data===data&&o.rev===p.rev&&o.obs?.includes(marca));
+    if(jaExiste)return;
+    pedidos.push({id:nextId++,cliente:p.cliente,qtd:p.qtd,valor:p.valor,desconto:p.desconto||0,status:'solicitado',rev:p.rev,data,pgto:p.pgto||'pix',obs:p.obs?`${marca} · ${p.obs}`:marca,loteId:null});
+    criou++;
+  });
+  if(criou&&shouldSave){await save();renderPedidos()}
+  return criou;
 }
 function filterByPeriod(list,f){
   const now=new Date();
@@ -843,20 +898,30 @@ function calcTotal(){
   const d=parseFloat(document.getElementById('m-desc').value)||0;
   document.getElementById('m-total').textContent=R$(Math.max(0,q*PRECO-d));
 }
+function togglePedidoProgramado(){
+  const tipo=document.getElementById('m-tipo')?.value||'avulso';
+  const freq=document.getElementById('m-freq')?.value||'diario';
+  document.getElementById('prog-fields').style.display=tipo==='programado'?'':'none';
+  document.getElementById('m-weekday-field').style.display=tipo==='programado'&&freq==='semanal'?'':'none';
+  document.getElementById('m-monthday-field').style.display=tipo==='programado'&&freq==='mensal'?'':'none';
+}
 function openModalPedido(){
-  const la=loteAtivo();
-  if(!la){toast('Cadastre um lote antes de criar pedidos.');return}
   const revs=users.filter(u=>u.role==='rev');
   document.getElementById('m-rev').innerHTML=revs.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
   document.getElementById('m-rev-f').style.display=curUser.role==='admin'&&revs.length?'':'none';
   ['m-nome','m-obs'].forEach(id=>document.getElementById(id).value='');
   ['m-qtd','m-desc'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('m-pgto').value='pix';
+  document.getElementById('m-tipo').value='avulso';
+  document.getElementById('m-freq').value='semanal';
+  document.getElementById('m-weekday').value=String(new Date().getDay());
+  document.getElementById('m-monthday').value=String(new Date().getDate());
+  togglePedidoProgramado();
   document.getElementById('m-total').textContent='R$ 0,00';
   document.getElementById('mo-pedido').classList.add('open');
 }
 async function salvarPedido(){
-  const la=loteAtivo();if(!la){toast('Sem lote ativo.');return}
+  const la=loteAtivo();
   const nome=document.getElementById('m-nome').value.trim();
   const qtd=parseInt(document.getElementById('m-qtd').value)||0;
   const desc=parseFloat(document.getElementById('m-desc').value)||0;
@@ -865,6 +930,17 @@ async function salvarPedido(){
   const obs=document.getElementById('m-obs').value.trim();
   const rev=curUser.role==='rev'?curUser.id:(document.getElementById('m-rev').value||curUser.id);
   if(!nome||qtd<=0){toast('⚠ Preencha nome e quantidade');return}
+  if(document.getElementById('m-tipo').value==='programado'){
+    if(remoteMode&&!recurringReady){toast('Execute a migração de pedidos programados no Supabase.');return}
+    const freq=document.getElementById('m-freq').value;
+    const diaSemana=freq==='semanal'?parseInt(document.getElementById('m-weekday').value):null;
+    const diaMes=freq==='mensal'?Math.min(31,Math.max(1,parseInt(document.getElementById('m-monthday').value)||1)):null;
+    programacoes.push({id:nextProgId++,cliente:nome,qtd,valor:val,desconto:desc,rev,pgto,obs,freq,diaSemana,diaMes,ativo:true});
+    await gerarPedidosProgramados(false);
+    await save();closeModal('mo-pedido');renderPedidos();renderConfig();toast('✓ Pedido programado salvo!');
+    return;
+  }
+  if(!la){toast('Cadastre um lote antes de criar pedido avulso.');return}
   if(curUser.role==='admin'&&qtd>loteRest(la)){toast(`Estoque insuficiente. Restam ${loteRest(la)} qtd.`);return}
   pedidos.push({id:nextId++,cliente:nome,qtd,valor:val,desconto:desc,status:curUser.role==='admin'?'pedido':'solicitado',rev,data:today(),pgto,obs,loteId:curUser.role==='admin'?la.id:null});
   await save();closeModal('mo-pedido');renderPedidos();toast('✓ Pedido registrado!');
@@ -1031,6 +1107,11 @@ function renderConfig(){
     </div>`;
   });
   document.getElementById('lotes-list').innerHTML=lh||'<div class="empty" style="padding:1.5rem"><i class="ti ti-package-off"></i><span>Nenhum lote cadastrado</span></div>';
+  let ph='';
+  programacoes.slice().reverse().forEach(p=>{
+    ph+=`<div class="user-item"><div class="u-left"><div class="u-av">${ini(p.cliente)}</div><div><div class="u-name">${p.cliente}</div><div class="u-meta">${p.qtd} qtd · ${freqLabel(p)} · ${revName(p.rev)}</div></div></div><div class="user-actions"><button class="del-btn" onclick="excluirProgramacao(${p.id})"><i class="ti ti-trash" style="font-size:15px"></i></button></div></div>`;
+  });
+  document.getElementById('programacoes-list').innerHTML=ph||'<div class="empty" style="padding:1.5rem"><i class="ti ti-calendar-off"></i><span>Nenhum pedido programado</span></div>';
   const admins=users.filter(u=>u.role==='admin');
   const revs=users.filter(u=>u.role==='rev');
   document.getElementById('cap-warn').style.display=revs.length>=5?'flex':'none';
@@ -1066,6 +1147,13 @@ async function setUserRole(id,role){
   u.role=role;
   await save();renderConfig();
   toast(role==='admin'?`${u.name} agora tem acesso admin.`:`${u.name} voltou para revendedor.`);
+}
+async function excluirProgramacao(id){
+  const p=programacoes.find(x=>x.id===id);if(!p)return;
+  if(!confirm(`Excluir programação de ${p.cliente}?`))return;
+  programacoes=programacoes.filter(x=>x.id!==id);
+  await deleteRemote('recurring_orders',id);
+  await save();renderConfig();toast('Programação excluída.');
 }
 
 // ── LOTES ──
@@ -1120,7 +1208,9 @@ async function initApp(){
     ss('0v0_u',JSON.stringify(users));
     ss('0v0_p',JSON.stringify(pedidos));
     ss('0v0_l',JSON.stringify(lotes));
+    ss('0v0_prog',JSON.stringify(programacoes));
   }
+  await gerarPedidosProgramados(true);
   applyTheme();
   mostrarTutorialInstalacao();
 }
