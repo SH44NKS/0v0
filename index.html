@@ -183,6 +183,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 .pp-pix{background:#E8F5FF;color:#0369A1}
 .pp-din{background:#F0FFF4;color:#166534}
 .pp-fia{background:#FFF7ED;color:#C2410C}
+.pp-doa{background:#F5F3FF;color:#6D28D9}
 
 /* SECTION LABEL */
 .slabel{font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px}
@@ -367,6 +368,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
         <div class="chip on" onclick="setFiltro('todos',this)">Todos</div>
         <div class="chip" onclick="setFiltro('pedido',this)">Pendentes</div>
         <div class="chip" onclick="setFiltro('entregue',this)">Entregues</div>
+        <div class="chip" onclick="setFiltro('fixos',this)">Fixos</div>
       </div>
       <div id="pedidos-list"></div>
     </div>
@@ -451,7 +453,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
     <div class="calc-preview"><span>Total do pedido</span><strong id="m-total">R$ 0,00</strong></div>
     <div class="mrow">
       <div class="mf"><label>Pagamento</label>
-        <select id="m-pgto"><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="fiado">Fiado</option></select>
+        <select id="m-pgto" onchange="calcTotal()"><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="fiado">Fiado</option><option value="doacao">Doação</option></select>
       </div>
       <div class="mf admin-only" id="m-rev-f"><label>Revendedor</label><select id="m-rev"></select></div>
     </div>
@@ -475,7 +477,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
       <div class="mf"><label>Valor (R$)</label><input type="number" id="e-val" step="0.50"></div>
     </div>
     <div class="mf"><label>Pagamento</label>
-      <select id="e-pgto"><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="fiado">Fiado</option></select>
+      <select id="e-pgto"><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="fiado">Fiado</option><option value="doacao">Doação</option></select>
     </div>
     <div class="mf"><label>Observação</label><textarea id="e-obs"></textarea></div>
     <div class="mbtns">
@@ -567,8 +569,8 @@ const fmtFull=d=>{if(!d)return'';const[y,m,dd]=d.split('-');return`${dd}/${m}/${
 const today=()=>new Date().toISOString().slice(0,10);
 const diffDays=d=>Math.floor((new Date()-new Date(d))/864e5);
 const revName=id=>users.find(u=>u.id===id)?.name||id;
-const pgtoLabel=p=>({pix:'Pix',dinheiro:'Dinheiro',fiado:'Fiado'}[p]||p);
-const pgtoClass=p=>({pix:'pp-pix',dinheiro:'pp-din',fiado:'pp-fia'}[p]||'');
+const pgtoLabel=p=>({pix:'Pix',dinheiro:'Dinheiro',fiado:'Fiado',doacao:'Doação'}[p]||p);
+const pgtoClass=p=>({pix:'pp-pix',dinheiro:'pp-din',fiado:'pp-fia',doacao:'pp-doa'}[p]||'');
 const R$=v=>`R$ ${(+v||0).toFixed(2)}`;
 const loteUsado=id=>pedidos.filter(p=>p.loteId===id&&p.status!=='solicitado').reduce((s,p)=>s+p.qtd,0);
 const loteRest=l=>Math.max(0,(l?.qtd||0)-loteUsado(l?.id));
@@ -576,6 +578,7 @@ const loteAtivo=()=>lotes.slice().sort((a,b)=>a.id-b.id).find(l=>loteRest(l)>0)|
 const loteNome=l=>l?`Lote ${fmtFull(l.data)}`:'Sem lote';
 const myPedidos=()=>curUser.role==='admin'?pedidos:pedidos.filter(p=>p.rev===curUser.id);
 const freqLabel=p=>p.freq==='diario'?'Diário':p.freq==='semanal'?`Semanal (${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][p.diaSemana]})`:`Mensal (dia ${p.diaMes})`;
+const isPedidoFixo=p=>String(p.obs||'').includes('Programado #');
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2300)}
 function sg(k){try{return localStorage.getItem(k)}catch{return null}}
@@ -826,6 +829,7 @@ function renderPedidos(){
   let list=mp.filter(p=>p.status!=='pago');
   if(filtro==='pedido')list=list.filter(p=>['pedido','solicitado'].includes(p.status));
   if(filtro==='entregue')list=list.filter(p=>p.status==='entregue');
+  if(filtro==='fixos')list=list.filter(isPedidoFixo);
   list=list.slice().reverse();
 
   if(!list.length){document.getElementById('pedidos-list').innerHTML='<div class="empty"><i class="ti ti-clipboard-off"></i><span>Nenhum pedido aqui</span></div>';return}
@@ -896,7 +900,8 @@ async function aprovarPedido(id){
 function calcTotal(){
   const q=parseInt(document.getElementById('m-qtd').value)||0;
   const d=parseFloat(document.getElementById('m-desc').value)||0;
-  document.getElementById('m-total').textContent=R$(Math.max(0,q*PRECO-d));
+  const pgto=document.getElementById('m-pgto')?.value;
+  document.getElementById('m-total').textContent=pgto==='doacao'?R$(0):R$(Math.max(0,q*PRECO-d));
 }
 function togglePedidoProgramado(){
   const tipo=document.getElementById('m-tipo')?.value||'avulso';
@@ -925,8 +930,9 @@ async function salvarPedido(){
   const nome=document.getElementById('m-nome').value.trim();
   const qtd=parseInt(document.getElementById('m-qtd').value)||0;
   const desc=parseFloat(document.getElementById('m-desc').value)||0;
-  const val=Math.max(0,qtd*PRECO-desc);
   const pgto=document.getElementById('m-pgto').value;
+  const val=pgto==='doacao'?0:Math.max(0,qtd*PRECO-desc);
+  const descontoFinal=pgto==='doacao'?qtd*PRECO:desc;
   const obs=document.getElementById('m-obs').value.trim();
   const rev=curUser.role==='rev'?curUser.id:(document.getElementById('m-rev').value||curUser.id);
   if(!nome||qtd<=0){toast('⚠ Preencha nome e quantidade');return}
@@ -935,14 +941,14 @@ async function salvarPedido(){
     const freq=document.getElementById('m-freq').value;
     const diaSemana=freq==='semanal'?parseInt(document.getElementById('m-weekday').value):null;
     const diaMes=freq==='mensal'?Math.min(31,Math.max(1,parseInt(document.getElementById('m-monthday').value)||1)):null;
-    programacoes.push({id:nextProgId++,cliente:nome,qtd,valor:val,desconto:desc,rev,pgto,obs,freq,diaSemana,diaMes,ativo:true});
+    programacoes.push({id:nextProgId++,cliente:nome,qtd,valor:val,desconto:descontoFinal,rev,pgto,obs,freq,diaSemana,diaMes,ativo:true});
     await gerarPedidosProgramados(false);
     await save();closeModal('mo-pedido');renderPedidos();renderConfig();toast('✓ Pedido programado salvo!');
     return;
   }
   if(!la){toast('Cadastre um lote antes de criar pedido avulso.');return}
   if(curUser.role==='admin'&&qtd>loteRest(la)){toast(`Estoque insuficiente. Restam ${loteRest(la)} qtd.`);return}
-  pedidos.push({id:nextId++,cliente:nome,qtd,valor:val,desconto:desc,status:curUser.role==='admin'?'pedido':'solicitado',rev,data:today(),pgto,obs,loteId:curUser.role==='admin'?la.id:null});
+  pedidos.push({id:nextId++,cliente:nome,qtd,valor:val,desconto:descontoFinal,status:curUser.role==='admin'?'pedido':'solicitado',rev,data:today(),pgto,obs,loteId:curUser.role==='admin'?la.id:null});
   await save();closeModal('mo-pedido');renderPedidos();toast('✓ Pedido registrado!');
 }
 
@@ -963,9 +969,10 @@ async function salvarEdicao(){
   const nome=document.getElementById('e-nome').value.trim();
   const qtd=parseInt(document.getElementById('e-qtd').value)||0;
   const val=parseFloat(document.getElementById('e-val').value)||0;
-  if(!nome||qtd<=0||val<=0){toast('⚠ Preencha todos os campos');return}
-  p.cliente=nome;p.qtd=qtd;p.valor=val;
   p.pgto=document.getElementById('e-pgto').value;
+  if(!nome||qtd<=0||(p.pgto!=='doacao'&&val<=0)){toast('⚠ Preencha todos os campos');return}
+  p.cliente=nome;p.qtd=qtd;p.valor=p.pgto==='doacao'?0:val;
+  if(p.pgto==='doacao')p.desconto=qtd*PRECO;
   p.obs=document.getElementById('e-obs').value.trim();
   await save();closeModal('mo-edit');renderPedidos();toast('✓ Atualizado!');
 }
