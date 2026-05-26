@@ -28,6 +28,7 @@ create table if not exists orders (
   pgto text not null default 'pix',
   obs text default '',
   lote_id bigint references lots(id),
+  lotes_json jsonb,
   created_at timestamptz not null default now()
 );
 
@@ -40,9 +41,10 @@ create table if not exists recurring_orders (
   rev text not null references app_users(id) on update cascade,
   pgto text not null default 'pix',
   obs text default '',
-  freq text not null check (freq in ('diario', 'semanal', 'mensal')),
+  freq text not null check (freq in ('diario', 'semanal', 'quinzenal', 'mensal')),
   dia_semana integer check (dia_semana between 0 and 6),
   dia_mes integer check (dia_mes between 1 and 31),
+  data_inicio date,
   ativo boolean not null default true,
   created_at timestamptz not null default now()
 );

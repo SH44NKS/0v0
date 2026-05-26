@@ -439,6 +439,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
           <select id="m-freq" onchange="togglePedidoProgramado()">
             <option value="diario">Diário</option>
             <option value="semanal">Semanal</option>
+            <option value="quinzenal">Quinzenal</option>
             <option value="mensal">Mensal</option>
           </select>
         </div>
@@ -448,6 +449,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
           </select>
         </div>
         <div class="mf" id="m-monthday-field" style="display:none"><label>Dia do mês</label><input type="number" id="m-monthday" min="1" max="31" value="1"></div>
+        <div class="mf" id="m-start-field" style="display:none"><label>Data inicial</label><input type="date" id="m-start"></div>
       </div>
     </div>
     <div class="calc-preview"><span>Total do pedido</span><strong id="m-total">R$ 0,00</strong></div>
@@ -562,6 +564,7 @@ const sbReady=Boolean(BACKEND.SUPABASE_URL&&BACKEND.SUPABASE_ANON_KEY);
 const apiBase=sbReady?`${BACKEND.SUPABASE_URL.replace(/\/$/,'')}/rest/v1`:null;
 let remoteMode=false;
 let recurringReady=false;
+let lotesJsonReady=false;
 
 // ── HELPERS ──
 const ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
@@ -572,13 +575,38 @@ const revName=id=>users.find(u=>u.id===id)?.name||id;
 const pgtoLabel=p=>({pix:'Pix',dinheiro:'Dinheiro',fiado:'Fiado',doacao:'Doação'}[p]||p);
 const pgtoClass=p=>({pix:'pp-pix',dinheiro:'pp-din',fiado:'pp-fia',doacao:'pp-doa'}[p]||'');
 const R$=v=>`R$ ${(+v||0).toFixed(2)}`;
-const loteUsado=id=>pedidos.filter(p=>p.loteId===id&&p.status!=='solicitado').reduce((s,p)=>s+p.qtd,0);
+const loteUsado=id=>pedidos.filter(p=>p.status!=='solicitado').reduce((s,p)=>s+pedidoQtdNoLote(p,id),0);
 const loteRest=l=>Math.max(0,(l?.qtd||0)-loteUsado(l?.id));
 const loteAtivo=()=>lotes.slice().sort((a,b)=>a.id-b.id).find(l=>loteRest(l)>0)||null;
 const loteNome=l=>l?`Lote ${fmtFull(l.data)}`:'Sem lote';
 const myPedidos=()=>curUser.role==='admin'?pedidos:pedidos.filter(p=>p.rev===curUser.id);
-const freqLabel=p=>p.freq==='diario'?'Diário':p.freq==='semanal'?`Semanal (${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][p.diaSemana]})`:`Mensal (dia ${p.diaMes})`;
+const freqLabel=p=>p.freq==='diario'?'Diário':p.freq==='semanal'?`Semanal (${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][p.diaSemana]})`:p.freq==='quinzenal'?`Quinzenal desde ${fmtFull(p.dataInicio)}`:`Mensal (dia ${p.diaMes})`;
 const isPedidoFixo=p=>String(p.obs||'').includes('Programado #');
+function pedidoQtdNoLote(p,id){
+  if(Array.isArray(p.lotesUsados)&&p.lotesUsados.length)return p.lotesUsados.filter(l=>Number(l.id)===Number(id)).reduce((s,l)=>s+(Number(l.qtd)||0),0);
+  return Number(p.loteId)===Number(id)?p.qtd:0;
+}
+function pedidoLoteTexto(p){
+  if(Array.isArray(p.lotesUsados)&&p.lotesUsados.length){
+    return p.lotesUsados.map(a=>{
+      const l=lotes.find(x=>Number(x.id)===Number(a.id));
+      return `${loteNome(l)} (${a.qtd} qtd)`;
+    }).join(' + ');
+  }
+  const lote=lotes.find(l=>l.id===p.loteId);
+  return lote?loteNome(lote):'';
+}
+function lotesComEstoque(){return lotes.slice().sort((a,b)=>a.id-b.id).filter(l=>loteRest(l)>0)}
+function alocarLotes(qtd){
+  let falta=qtd;
+  const aloc=[];
+  for(const l of lotesComEstoque()){
+    const usar=Math.min(falta,loteRest(l));
+    if(usar>0){aloc.push({id:l.id,qtd:usar});falta-=usar}
+    if(falta<=0)break;
+  }
+  return falta>0?null:aloc;
+}
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2300)}
 function sg(k){try{return localStorage.getItem(k)}catch{return null}}
@@ -589,17 +617,19 @@ async function hashPass(pass){
   return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 function toDbOrder(p){
-  return {id:p.id,cliente:p.cliente,qtd:p.qtd,valor:p.valor,desconto:p.desconto||0,status:p.status,rev:p.rev,data:p.data,data_pago:p.dataPago||null,pgto:p.pgto||'pix',obs:p.obs||'',lote_id:p.loteId||null};
+  const row={id:p.id,cliente:p.cliente,qtd:p.qtd,valor:p.valor,desconto:p.desconto||0,status:p.status,rev:p.rev,data:p.data,data_pago:p.dataPago||null,pgto:p.pgto||'pix',obs:p.obs||'',lote_id:p.loteId||null};
+  if(lotesJsonReady)row.lotes_json=p.lotesUsados||null;
+  return row;
 }
 function fromDbOrder(p){
-  return {id:p.id,cliente:p.cliente,qtd:p.qtd,valor:Number(p.valor)||0,desconto:Number(p.desconto)||0,status:p.status,rev:p.rev,data:p.data,dataPago:p.data_pago||null,pgto:p.pgto||'pix',obs:p.obs||'',loteId:p.lote_id||null};
+  return {id:p.id,cliente:p.cliente,qtd:p.qtd,valor:Number(p.valor)||0,desconto:Number(p.desconto)||0,status:p.status,rev:p.rev,data:p.data,dataPago:p.data_pago||null,pgto:p.pgto||'pix',obs:p.obs||'',loteId:p.lote_id||null,lotesUsados:p.lotes_json||null};
 }
 function toDbLot(l){return {id:l.id,data:l.data,qtd:l.qtd,obs:l.obs||''}}
 function fromDbLot(l){return {id:l.id,data:l.data,qtd:l.qtd,obs:l.obs||''}}
 function toDbUser(u){return {id:u.id,name:u.name,username:u.username,role:u.role,pass_hash:u.passHash||u.pass_hash||''}}
 function fromDbUser(u){return {id:u.id,name:u.name,username:u.username,role:u.role,passHash:u.pass_hash}}
-function toDbProg(p){return {id:p.id,cliente:p.cliente,qtd:p.qtd,valor:p.valor,desconto:p.desconto||0,rev:p.rev,pgto:p.pgto||'pix',obs:p.obs||'',freq:p.freq,dia_semana:p.diaSemana??null,dia_mes:p.diaMes??null,ativo:p.ativo!==false}}
-function fromDbProg(p){return {id:p.id,cliente:p.cliente,qtd:p.qtd,valor:Number(p.valor)||0,desconto:Number(p.desconto)||0,rev:p.rev,pgto:p.pgto||'pix',obs:p.obs||'',freq:p.freq,diaSemana:p.dia_semana,diaMes:p.dia_mes,ativo:p.ativo!==false}}
+function toDbProg(p){return {id:p.id,cliente:p.cliente,qtd:p.qtd,valor:p.valor,desconto:p.desconto||0,rev:p.rev,pgto:p.pgto||'pix',obs:p.obs||'',freq:p.freq,dia_semana:p.diaSemana??null,dia_mes:p.diaMes??null,data_inicio:p.dataInicio||null,ativo:p.ativo!==false}}
+function fromDbProg(p){return {id:p.id,cliente:p.cliente,qtd:p.qtd,valor:Number(p.valor)||0,desconto:Number(p.desconto)||0,rev:p.rev,pgto:p.pgto||'pix',obs:p.obs||'',freq:p.freq,diaSemana:p.dia_semana,diaMes:p.dia_mes,dataInicio:p.data_inicio||null,ativo:p.ativo!==false}}
 async function api(path,options={}){
   const res=await fetch(`${apiBase}${path}`,{
     ...options,
@@ -648,6 +678,7 @@ async function loadRemote(){
   let u,p,l,pr=[];
   try{
     [u,p,l]=await Promise.all([selectTable('app_users'),selectTable('orders'),selectTable('lots')]);
+    try{await api('/orders?select=lotes_json&limit=1');lotesJsonReady=true}catch(err){lotesJsonReady=false;console.warn('Coluna lotes_json indisponivel',err)}
     try{pr=await selectTable('recurring_orders');recurringReady=true}catch(err){pr=[];recurringReady=false;console.warn('Tabela recurring_orders indisponivel',err)}
   }catch(err){
     console.warn('Supabase indisponivel',err);
@@ -670,6 +701,13 @@ function programacaoVenceHoje(p){
   const d=new Date();
   if(p.freq==='diario')return true;
   if(p.freq==='semanal')return d.getDay()===Number(p.diaSemana);
+  if(p.freq==='quinzenal'){
+    if(!p.dataInicio)return false;
+    const inicio=new Date(`${p.dataInicio}T00:00:00`);
+    const hoje=new Date(`${today()}T00:00:00`);
+    const dias=Math.floor((hoje-inicio)/864e5);
+    return dias>=0&&dias%15===0;
+  }
   if(p.freq==='mensal')return d.getDate()===Number(p.diaMes);
   return false;
 }
@@ -837,7 +875,7 @@ function renderPedidos(){
   const stripeC=s=>({solicitado:'stripe-sol',pedido:'stripe-ped',entregue:'stripe-ent',pago:'stripe-pag'}[s]||'stripe-ped');
   document.getElementById('pedidos-list').innerHTML=list.map(p=>{
     const old=diffDays(p.data)>5;
-    const lote=lotes.find(l=>l.id===p.loteId);
+    const loteTxt=pedidoLoteTexto(p);
     return `<div class="pc" id="pc-${p.id}">
       <div class="pc-top" onclick="toggleCard(${p.id})">
         <div class="pc-stripe ${stripeC(p.status)}"></div>
@@ -856,9 +894,9 @@ function renderPedidos(){
           <div class="pd-item"><div class="pd-lbl">Status</div><div class="pd-val"><span class="sp ${spClass(p.status)}">${spLabel(p.status)}</span></div></div>
           ${is_admin?`<div class="pd-item"><div class="pd-lbl">Valor</div><div class="pd-val">${R$(p.valor)}${p.desconto?` <span style="font-size:11px;color:var(--t3)">(-${R$(p.desconto)})</span>`:''}</div></div>`:''}
           <div class="pd-item"><div class="pd-lbl">Pagamento</div><div class="pd-val"><span class="pp ${pgtoClass(p.pgto)}">${pgtoLabel(p.pgto)}</span></div></div>
-          ${lote?`<div class="pd-item"><div class="pd-lbl">Lote</div><div class="pd-val">${loteNome(lote)}</div></div>`:`<div class="pd-item"><div class="pd-lbl">Data</div><div class="pd-val">${fmtFull(p.data)}</div></div>`}
+          ${loteTxt?`<div class="pd-item"><div class="pd-lbl">Lote</div><div class="pd-val">${loteTxt}</div></div>`:`<div class="pd-item"><div class="pd-lbl">Data</div><div class="pd-val">${fmtFull(p.data)}</div></div>`}
           ${is_admin?`<div class="pd-item"><div class="pd-lbl">Revendedor</div><div class="pd-val">${revName(p.rev)}</div></div>`:''}
-          ${lote?`<div class="pd-item"><div class="pd-lbl">Data</div><div class="pd-val">${fmtFull(p.data)}</div></div>`:''}
+          ${loteTxt?`<div class="pd-item"><div class="pd-lbl">Data</div><div class="pd-val">${fmtFull(p.data)}</div></div>`:''}
         </div>
         ${p.obs?`<div class="pc-obs"><i class="ti ti-notes" style="font-size:14px"></i><span>${p.obs}</span></div>`:''}
         ${is_admin&&p.status==='solicitado'?`<button class="pd-approve" onclick="aprovarPedido(${p.id})"><i class="ti ti-check"></i> Aprovar pedido</button>`:''}
@@ -889,10 +927,11 @@ async function setStatus(id,s){
 async function aprovarPedido(id){
   if(curUser.role!=='admin')return;
   const p=pedidos.find(x=>x.id===id);if(!p)return;
-  const la=loteAtivo();
-  if(!la){toast('Cadastre um lote antes de aprovar.');return}
-  if(loteRest(la)<p.qtd){toast(`Estoque insuficiente. Restam ${loteRest(la)} qtd.`);return}
-  p.loteId=la.id;p.status='pedido';
+  const aloc=alocarLotes(p.qtd);
+  if(!aloc){toast('Estoque insuficiente nos lotes cadastrados.');return}
+  if(remoteMode&&aloc.length>1&&!lotesJsonReady){toast('Execute a migração de divisão por lote no Supabase.');return}
+  if(aloc.length>1&&!confirm(`Esse pedido excede o lote atual. Usar ${aloc.map(a=>`${a.qtd} qtd do ${loteNome(lotes.find(l=>l.id===a.id))}`).join(' + ')}?`))return;
+  p.loteId=aloc[0].id;p.lotesUsados=aloc;p.status='pedido';
   await save();renderPedidos();toast('✓ Pedido aprovado!');
 }
 
@@ -909,6 +948,7 @@ function togglePedidoProgramado(){
   document.getElementById('prog-fields').style.display=tipo==='programado'?'':'none';
   document.getElementById('m-weekday-field').style.display=tipo==='programado'&&freq==='semanal'?'':'none';
   document.getElementById('m-monthday-field').style.display=tipo==='programado'&&freq==='mensal'?'':'none';
+  document.getElementById('m-start-field').style.display=tipo==='programado'&&freq==='quinzenal'?'':'none';
 }
 function openModalPedido(){
   const revs=users.filter(u=>u.role==='rev');
@@ -921,6 +961,7 @@ function openModalPedido(){
   document.getElementById('m-freq').value='semanal';
   document.getElementById('m-weekday').value=String(new Date().getDay());
   document.getElementById('m-monthday').value=String(new Date().getDate());
+  document.getElementById('m-start').value=today();
   togglePedidoProgramado();
   document.getElementById('m-total').textContent='R$ 0,00';
   document.getElementById('mo-pedido').classList.add('open');
@@ -941,14 +982,17 @@ async function salvarPedido(){
     const freq=document.getElementById('m-freq').value;
     const diaSemana=freq==='semanal'?parseInt(document.getElementById('m-weekday').value):null;
     const diaMes=freq==='mensal'?Math.min(31,Math.max(1,parseInt(document.getElementById('m-monthday').value)||1)):null;
-    programacoes.push({id:nextProgId++,cliente:nome,qtd,valor:val,desconto:descontoFinal,rev,pgto,obs,freq,diaSemana,diaMes,ativo:true});
+    const dataInicio=freq==='quinzenal'?(document.getElementById('m-start').value||today()):null;
+    programacoes.push({id:nextProgId++,cliente:nome,qtd,valor:val,desconto:descontoFinal,rev,pgto,obs,freq,diaSemana,diaMes,dataInicio,ativo:true});
     await gerarPedidosProgramados(false);
     await save();closeModal('mo-pedido');renderPedidos();renderConfig();toast('✓ Pedido programado salvo!');
     return;
   }
   if(!la){toast('Cadastre um lote antes de criar pedido avulso.');return}
-  if(curUser.role==='admin'&&qtd>loteRest(la)){toast(`Estoque insuficiente. Restam ${loteRest(la)} qtd.`);return}
-  pedidos.push({id:nextId++,cliente:nome,qtd,valor:val,desconto:descontoFinal,status:curUser.role==='admin'?'pedido':'solicitado',rev,data:today(),pgto,obs,loteId:curUser.role==='admin'?la.id:null});
+  const aloc=curUser.role==='admin'?alocarLotes(qtd):null;
+  if(curUser.role==='admin'&&!aloc){toast('Estoque insuficiente nos lotes cadastrados.');return}
+  if(curUser.role==='admin'&&remoteMode&&aloc.length>1&&!lotesJsonReady){toast('Execute a migração de divisão por lote no Supabase.');return}
+  pedidos.push({id:nextId++,cliente:nome,qtd,valor:val,desconto:descontoFinal,status:curUser.role==='admin'?'pedido':'solicitado',rev,data:today(),pgto,obs,loteId:curUser.role==='admin'?aloc[0].id:null,lotesUsados:curUser.role==='admin'?aloc:null});
   await save();closeModal('mo-pedido');renderPedidos();toast('✓ Pedido registrado!');
 }
 
@@ -1004,7 +1048,7 @@ function renderResumo(){
   const pgF=filterByPeriod(pedidos.filter(p=>p.status==='pago'),'dataPago');
   const total=allF.reduce((s,p)=>s+p.valor,0);
   const totQtd=allF.reduce((s,p)=>s+p.qtd,0);
-  const lotesCount=new Set(allF.map(p=>p.loteId).filter(Boolean)).size;
+  const lotesCount=new Set(allF.flatMap(p=>Array.isArray(p.lotesUsados)&&p.lotesUsados.length?p.lotesUsados.map(a=>a.id):[p.loteId]).filter(Boolean)).size;
   const vendedoresCount=new Set(allF.map(p=>p.rev)).size;
   let html=`<div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Período: ${pLabel[periodo]}</div>`;
   html+=`<div class="stats">
@@ -1041,10 +1085,12 @@ function abrirDetalhe(tipo){
   if(tipo==='lotes'){
     document.getElementById('det-title').textContent='Resumo por lote';
     lotes.slice().reverse().forEach(l=>{
-      const items=allF.filter(p=>p.loteId===l.id);if(!items.length)return;
+      const items=allF.filter(p=>pedidoQtdNoLote(p,l.id)>0);if(!items.length)return;
+      const qtdLote=items.reduce((s,p)=>s+pedidoQtdNoLote(p,l.id),0);
+      const valorLote=items.reduce((s,p)=>s+(p.qtd? p.valor*(pedidoQtdNoLote(p,l.id)/p.qtd):0),0);
       html+=`<div class="det-sub">${loteNome(l)}</div>
-        <div class="det-row"><span>Vendido</span><strong>${items.reduce((s,p)=>s+p.qtd,0)} qtd</strong></div>
-        <div class="det-row"><span>Valor total</span><strong>${R$(items.reduce((s,p)=>s+p.valor,0))}</strong></div>
+        <div class="det-row"><span>Vendido</span><strong>${qtdLote} qtd</strong></div>
+        <div class="det-row"><span>Valor total</span><strong>${R$(valorLote)}</strong></div>
         <div class="det-row"><span>Pedidos</span><strong>${items.length}</strong></div>
         <div class="det-row"><span>Restante no lote</span><strong>${loteRest(l)} qtd</strong></div>`;
     });
@@ -1056,8 +1102,10 @@ function abrirDetalhe(tipo){
       html+=`<div class="det-sub">${r.name}</div>
         <div class="det-row"><span>Total vendido</span><strong>${vp.reduce((s,p)=>s+p.qtd,0)} qtd · ${R$(vp.reduce((s,p)=>s+p.valor,0))}</strong></div>`;
       lotes.slice().reverse().forEach(l=>{
-        const items=vp.filter(p=>p.loteId===l.id);if(!items.length)return;
-        html+=`<div class="det-row"><span>${loteNome(l)} · ${items.length} pedido${items.length!==1?'s':''}</span><strong>${items.reduce((s,p)=>s+p.qtd,0)} qtd · ${R$(items.reduce((s,p)=>s+p.valor,0))}</strong></div>`;
+        const items=vp.filter(p=>pedidoQtdNoLote(p,l.id)>0);if(!items.length)return;
+        const qtdLote=items.reduce((s,p)=>s+pedidoQtdNoLote(p,l.id),0);
+        const valorLote=items.reduce((s,p)=>s+(p.qtd? p.valor*(pedidoQtdNoLote(p,l.id)/p.qtd):0),0);
+        html+=`<div class="det-row"><span>${loteNome(l)} · ${items.length} pedido${items.length!==1?'s':''}</span><strong>${qtdLote} qtd · ${R$(valorLote)}</strong></div>`;
       });
     });
   }
@@ -1192,7 +1240,7 @@ async function salvarLote(){
 }
 async function excluirLote(id){
   const lote=lotes.find(l=>l.id===id);if(!lote)return;
-  if(pedidos.some(p=>p.loteId===id)){toast('Este lote tem pedidos vinculados e não pode ser excluído.');return}
+  if(pedidos.some(p=>pedidoQtdNoLote(p,id)>0)){toast('Este lote tem pedidos vinculados e não pode ser excluído.');return}
   if(!confirm(`Excluir ${loteNome(lote)}?`))return;
   lotes=lotes.filter(l=>l.id!==id);
   await deleteRemote('lots',id);
