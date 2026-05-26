@@ -592,6 +592,11 @@ const loteNome=l=>l?`Lote ${fmtFull(l.data)}`:'Sem lote';
 const myPedidos=()=>curUser.role==='admin'?pedidos:pedidos.filter(p=>p.rev===curUser.id);
 const freqLabel=p=>p.freq==='diario'?'Diário':p.freq==='semanal'?`Semanal (${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][p.diaSemana]})`:p.freq==='quinzenal'?`Quinzenal desde ${fmtFull(p.dataInicio)}`:`Mensal (dia ${p.diaMes})`;
 const isPedidoFixo=p=>String(p.obs||'').includes('Programado #');
+function vendedoresDoFiltro(base=pedidos){
+  const ids=new Set(base.map(p=>p.rev).filter(Boolean));
+  users.filter(u=>u.role==='rev').forEach(u=>ids.add(u.id));
+  return [...ids].map(id=>users.find(u=>u.id===id)||{id,name:id}).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+}
 function pedidoQtdNoLote(p,id){
   if(Array.isArray(p.lotesUsados)&&p.lotesUsados.length)return p.lotesUsados.filter(l=>Number(l.id)===Number(id)).reduce((s,l)=>s+(Number(l.qtd)||0),0);
   return Number(p.loteId)===Number(id)?p.qtd:0;
@@ -875,8 +880,10 @@ function renderPedidos(){
   const revSelect=document.getElementById('filtro-rev');
   if(revSelect){
     const current=filtroRev;
-    revSelect.innerHTML=`<option value="todos">Todos os vendedores</option>`+users.filter(u=>u.role==='rev').map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
-    revSelect.value=current;
+    const vendedores=vendedoresDoFiltro(mp);
+    revSelect.innerHTML=`<option value="todos">Todos os vendedores</option>`+vendedores.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
+    revSelect.value=vendedores.some(u=>u.id===current)?current:'todos';
+    filtroRev=revSelect.value;
   }
   const antigos=mp.filter(p=>!['pago','solicitado'].includes(p.status)&&diffDays(p.data)>5);
   document.getElementById('notif-div').innerHTML=antigos.length
@@ -1088,6 +1095,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open')}
 
 // ── PAGOS ──
 function renderPagos(){
+  const is_admin=curUser?.role==='admin';
   const list=pedidos.filter(p=>p.status==='pago').slice().reverse();
   if(!list.length){document.getElementById('pagos-list').innerHTML='<div class="empty"><i class="ti ti-coin-off"></i><span>Nenhum pagamento ainda</span></div>';return}
   const total=list.reduce((s,p)=>s+p.valor,0);
@@ -1117,7 +1125,7 @@ function renderResumo(){
     <div class="sc" onclick="abrirDetalhe('lotes')" style="cursor:pointer"><div class="sc-l">Lotes usados</div><div class="sc-v cb">${lotesCount}</div><div class="sc-sub">por estoque</div></div>
     <div class="sc" onclick="abrirDetalhe('vendedores')" style="cursor:pointer"><div class="sc-l">Vendedores</div><div class="sc-v cg">${vendedoresCount}</div><div class="sc-sub">por lote</div></div>
   </div>`;
-  const revData=users.filter(u=>u.role==='rev').map(r=>{
+  const revData=vendedoresDoFiltro(allF).map(r=>{
     const ra=allF.filter(p=>p.rev===r.id);const rp=pgF.filter(p=>p.rev===r.id);
     return{id:r.id,name:r.name,tot:ra.reduce((s,p)=>s+p.valor,0),pg:rp.reduce((s,p)=>s+p.valor,0),qtd:ra.reduce((s,p)=>s+p.qtd,0),c:ra.length};
   }).filter(r=>r.c>0);
@@ -1157,7 +1165,7 @@ function abrirDetalhe(tipo){
   }
   if(tipo==='vendedores'){
     document.getElementById('det-title').textContent='Vendedores por lote';
-    users.filter(u=>u.role==='rev').forEach(r=>{
+    vendedoresDoFiltro(allF).forEach(r=>{
       const vp=allF.filter(p=>p.rev===r.id);if(!vp.length)return;
       html+=`<div class="det-sub">${r.name}</div>
         <div class="det-row"><span>Total vendido</span><strong>${vp.reduce((s,p)=>s+p.qtd,0)} qtd · ${R$(vp.reduce((s,p)=>s+p.valor,0))}</strong></div>`;
