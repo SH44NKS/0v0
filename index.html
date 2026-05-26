@@ -367,11 +367,11 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
       <div class="stats" id="stats-row"></div>
       <button class="fab" onclick="openModalPedido()"><i class="ti ti-plus"></i> Novo Pedido</button>
       <div class="chips">
-        <div class="chip on" onclick="setFiltro('todos',this)">Todos</div>
-        <div class="chip" onclick="setFiltro('pedido',this)">Pendentes</div>
-        <div class="chip" onclick="setFiltro('entregue',this)">Entregues</div>
+        <div class="chip on" onclick="setFiltro('pedido',this)">Pendentes</div>
         <div class="chip" onclick="setFiltro('fixos',this)">Fixos</div>
         <div class="chip" onclick="setFiltro('espera',this)">Espera</div>
+        <div class="chip" onclick="setFiltro('entregue',this)">Entregues</div>
+        <div class="chip" onclick="setFiltro('todos',this)">Todos</div>
       </div>
       <div class="mf admin-only" style="margin-bottom:12px"><label>Vendedor</label><select id="filtro-rev" onchange="setFiltroRev(this.value)"></select></div>
       <div id="pedidos-list"></div>
@@ -566,7 +566,7 @@ let users=[
 let pedidos=[];
 let lotes=[];
 let programacoes=[];
-let nextId=1,nextLoteId=1,nextProgId=1,curUser=null,filtro='todos',filtroRev='todos',periodo='semana',histCliente=null;
+let nextId=1,nextLoteId=1,nextProgId=1,curUser=null,filtro='pedido',filtroRev='todos',periodo='semana',histCliente=null;
 const PRECO=25,VER='0v0-real-clean-v1';
 const BACKEND=window.OVO_CONFIG||{};
 const sbReady=Boolean(BACKEND.SUPABASE_URL&&BACKEND.SUPABASE_ANON_KEY);
