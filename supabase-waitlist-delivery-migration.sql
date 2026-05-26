@@ -1,3 +1,15 @@
+alter table orders add column if not exists taxa_entrega numeric(12,2) not null default 0;
+alter table orders add column if not exists lotes_json jsonb;
+
+alter table orders drop constraint if exists orders_status_check;
+alter table orders add constraint orders_status_check
+  check (status in ('solicitado', 'pedido', 'entregue', 'pago', 'espera'));
+
+alter table lots add column if not exists status text not null default 'ativo';
+alter table lots drop constraint if exists lots_status_check;
+alter table lots add constraint lots_status_check
+  check (status in ('ativo', 'pendente'));
+
 create table if not exists recurring_orders (
   id bigint primary key,
   cliente text not null,
@@ -16,7 +28,12 @@ create table if not exists recurring_orders (
   created_at timestamptz not null default now()
 );
 
+alter table recurring_orders add column if not exists data_inicio date;
 alter table recurring_orders add column if not exists taxa_entrega numeric(12,2) not null default 0;
+
+alter table recurring_orders drop constraint if exists recurring_orders_freq_check;
+alter table recurring_orders add constraint recurring_orders_freq_check
+  check (freq in ('diario', 'semanal', 'quinzenal', 'mensal'));
 
 alter table recurring_orders enable row level security;
 

@@ -12,6 +12,7 @@ create table if not exists lots (
   data date not null,
   qtd integer not null check (qtd > 0),
   obs text default '',
+  status text not null default 'ativo' check (status in ('ativo', 'pendente')),
   created_at timestamptz not null default now()
 );
 
@@ -21,7 +22,8 @@ create table if not exists orders (
   qtd integer not null check (qtd > 0),
   valor numeric(12,2) not null default 0,
   desconto numeric(12,2) not null default 0,
-  status text not null check (status in ('solicitado', 'pedido', 'entregue', 'pago')),
+  taxa_entrega numeric(12,2) not null default 0,
+  status text not null check (status in ('solicitado', 'pedido', 'entregue', 'pago', 'espera')),
   rev text not null references app_users(id) on update cascade,
   data date not null,
   data_pago date,
@@ -38,6 +40,7 @@ create table if not exists recurring_orders (
   qtd integer not null check (qtd > 0),
   valor numeric(12,2) not null default 0,
   desconto numeric(12,2) not null default 0,
+  taxa_entrega numeric(12,2) not null default 0,
   rev text not null references app_users(id) on update cascade,
   pgto text not null default 'pix',
   obs text default '',
