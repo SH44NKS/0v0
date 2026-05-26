@@ -156,6 +156,8 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 .pc-chevron{color:var(--t3);transition:transform .2s;font-size:16px;line-height:1}
 .pc.open .pc-chevron{transform:rotate(180deg)}
 .pc-age{font-size:11px;font-weight:600;color:#92400E;background:#FEF3C7;border:1px solid #FCD34D;border-radius:var(--rf);padding:2px 7px}
+.wait-qty{display:inline-flex;align-items:center;justify-content:center;min-width:48px;padding:5px 8px;border:1px solid #FCD34D;background:#FEF3C7;color:#92400E;border-radius:10px;font-size:12px;font-weight:800;font-family:var(--fh);white-space:nowrap}
+.wait-qty.small{min-width:42px;padding:4px 7px;font-size:11px}
 
 /* PEDIDO DETAIL */
 .pc-detail{display:none;padding:0 14px 14px}
@@ -586,6 +588,7 @@ const pgtoClass=p=>({pix:'pp-pix',dinheiro:'pp-din',fiado:'pp-fia',doacao:'pp-do
 const R$=v=>`R$ ${(+v||0).toFixed(2)}`;
 const TAXA_ENTREGA=5;
 const loteUsado=id=>pedidos.filter(p=>!['solicitado','espera'].includes(p.status)).reduce((s,p)=>s+pedidoQtdNoLote(p,id),0);
+const qtdEmEspera=()=>pedidos.filter(p=>p.status==='espera').reduce((s,p)=>s+(Number(p.qtd)||0),0);
 const loteRest=l=>Math.max(0,(l?.qtd||0)-loteUsado(l?.id));
 const loteAtivo=()=>lotes.slice().sort((a,b)=>a.id-b.id).find(l=>(l.status||'ativo')==='ativo'&&loteRest(l)>0)||null;
 const loteNome=l=>l?`Lote ${fmtFull(l.data)}`:'Sem lote';
@@ -859,10 +862,12 @@ function setFiltro(f,el){filtro=f;document.querySelectorAll('.chip').forEach(x=>
 function renderLoteStrip(){
   const strip=document.getElementById('lote-strip');
   const la=loteAtivo();
+  const espera=qtdEmEspera();
+  const esperaBadge=espera?`<span class="wait-qty">${espera} qtd em espera</span>`:'';
   if(curUser.role!=='admin'){
     const r=la?loteRest(la):0;
     strip.innerHTML=r>0
-      ?`<div class="lote-strip"><div class="ls-left"><div class="ls-icon"><img class="stock-ico" src="stock-icon.jpg" alt=""></div><div class="ls-info"><div class="ls-label">${loteNome(la)}</div><div class="ls-bar-wrap"><div class="ls-bar"><div class="ls-fill" style="width:${Math.min(100,((la.qtd-r)/la.qtd)*100)}%"></div></div><span class="ls-qty">${r} restantes</span></div></div></div></div>`
+      ?`<div class="lote-strip"><div class="ls-left"><div class="ls-icon"><img class="stock-ico" src="stock-icon.jpg" alt=""></div><div class="ls-info"><div class="ls-label">${loteNome(la)}</div><div class="ls-bar-wrap"><div class="ls-bar"><div class="ls-fill" style="width:${Math.min(100,((la.qtd-r)/la.qtd)*100)}%"></div></div><span class="ls-qty">${r} restantes</span></div></div></div>${esperaBadge}</div>`
       :`<div class="lote-empty"><i class="ti ti-alert-triangle" style="font-size:18px"></i><span>Sem estoque disponível</span></div>`;
     return;
   }
@@ -917,7 +922,8 @@ function renderPedidos(){
   if(!list.length){document.getElementById('pedidos-list').innerHTML='<div class="empty"><i class="ti ti-clipboard-off"></i><span>Nenhum pedido aqui</span></div>';return}
 
   const stripeC=s=>({solicitado:'stripe-sol',pedido:'stripe-ped',entregue:'stripe-ent',pago:'stripe-pag'}[s]||'stripe-ped');
-  document.getElementById('pedidos-list').innerHTML=list.map(p=>{
+  const esperaInfo=filtro==='espera'?`<div class="notif"><i class="ti ti-package"></i><span>Lote esperado</span><span class="wait-qty">${list.reduce((s,p)=>s+(Number(p.qtd)||0),0)} qtd</span></div>`:'';
+  document.getElementById('pedidos-list').innerHTML=esperaInfo+list.map(p=>{
     const old=diffDays(p.data)>5;
     const loteTxt=pedidoLoteTexto(p);
     return `<div class="pc" id="pc-${p.id}">
@@ -928,6 +934,7 @@ function renderPedidos(){
           <div class="pc-sub">${p.qtd} qtd · ${fmtFull(p.data)}${is_admin?' · '+revName(p.rev):''}</div>
         </div>
         <div class="pc-right">
+          ${p.status==='espera'?`<span class="wait-qty small">${p.qtd} qtd</span>`:''}
           ${is_admin?`<div class="pc-val">${R$(p.valor)}</div>`:`<span class="sp ${spClass(p.status)}">${spLabel(p.status)}</span>`}
           ${old?`<span class="pc-age">${diffDays(p.data)}d</span>`:`<i class="ti ti-chevron-down pc-chevron"></i>`}
         </div>
@@ -936,6 +943,7 @@ function renderPedidos(){
         <div class="pd-divider"></div>
         <div class="pd-grid">
           <div class="pd-item"><div class="pd-lbl">Status</div><div class="pd-val"><span class="sp ${spClass(p.status)}">${spLabel(p.status)}</span></div></div>
+          ${p.status==='espera'?`<div class="pd-item"><div class="pd-lbl">Lote esperado</div><div class="pd-val"><span class="wait-qty small">${p.qtd} qtd</span></div></div>`:''}
           ${is_admin?`<div class="pd-item"><div class="pd-lbl">Valor</div><div class="pd-val">${R$(p.valor)}${p.desconto?` <span style="font-size:11px;color:var(--t3)">(-${R$(p.desconto)})</span>`:''}</div></div>`:''}
           <div class="pd-item"><div class="pd-lbl">Pagamento</div><div class="pd-val"><span class="pp ${pgtoClass(p.pgto)}">${pgtoLabel(p.pgto)}</span></div></div>
           ${loteTxt?`<div class="pd-item"><div class="pd-lbl">Lote</div><div class="pd-val">${loteTxt}</div></div>`:`<div class="pd-item"><div class="pd-lbl">Data</div><div class="pd-val">${fmtFull(p.data)}</div></div>`}
