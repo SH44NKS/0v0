@@ -595,6 +595,7 @@ const loteNome=l=>l?`Lote ${fmtFull(l.data)}`:'Sem lote';
 const myPedidos=()=>curUser.role==='admin'?pedidos:pedidos.filter(p=>p.rev===curUser.id);
 const freqLabel=p=>p.freq==='diario'?'Diário':p.freq==='semanal'?`Semanal (${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][p.diaSemana]})`:p.freq==='quinzenal'?`Quinzenal desde ${fmtFull(p.dataInicio)}`:`Mensal (dia ${p.diaMes})`;
 const isPedidoFixo=p=>String(p.obs||'').includes('Programado #');
+const pedidoPago=p=>Boolean(p.dataPago);
 function vendedoresDoFiltro(base=pedidos){
   const ids=new Set(base.map(p=>p.rev).filter(Boolean));
   users.filter(u=>u.role==='rev').forEach(u=>ids.add(u.id));
@@ -935,6 +936,7 @@ function renderPedidos(){
         </div>
         <div class="pc-right">
           ${p.status==='espera'?`<span class="wait-qty small">${p.qtd} qtd</span>`:''}
+          ${pedidoPago(p)&&p.status!=='pago'?`<span class="sp sp-pag">Pago</span>`:''}
           ${is_admin?`<div class="pc-val">${R$(p.valor)}</div>`:`<span class="sp ${spClass(p.status)}">${spLabel(p.status)}</span>`}
           ${old?`<span class="pc-age">${diffDays(p.data)}d</span>`:`<i class="ti ti-chevron-down pc-chevron"></i>`}
         </div>
@@ -955,7 +957,7 @@ function renderPedidos(){
         ${is_admin&&p.status==='espera'?`<button class="pd-approve" onclick="moverEsperaParaPedidos(${p.id})"><i class="ti ti-arrow-right"></i> Mover para pedidos</button>`:''}
         ${is_admin?`<div class="pd-acts">
           ${p.status==='pedido'?`<button class="pd-act blue" onclick="setStatus(${p.id},'entregue')"><i class="ti ti-truck"></i>Entregue</button>`:''}
-          ${['pedido','entregue'].includes(p.status)?`<button class="pd-act green" onclick="setStatus(${p.id},'pago')"><i class="ti ti-coin"></i>Pago</button>`:''}
+          ${['pedido','entregue'].includes(p.status)&&!pedidoPago(p)?`<button class="pd-act green" onclick="setStatus(${p.id},'pago')"><i class="ti ti-coin"></i>Pago</button>`:''}
           <button class="pd-act" onclick="openEdit(${p.id})"><i class="ti ti-pencil"></i>Editar</button>
           <button class="pd-act danger" onclick="excluir(${p.id})"><i class="ti ti-trash"></i>Excluir</button>
         </div>`:''}
@@ -975,7 +977,12 @@ function toggleCard(id){
 async function setStatus(id,s){
   const p=pedidos.find(x=>x.id===id);if(!p)return;
   if(curUser.role!=='admin'){toast('Somente o admin pode alterar status.');return}
-  p.status=s;if(s==='pago')p.dataPago=today();
+  if(s==='pago'){
+    p.dataPago=p.dataPago||today();
+    if(p.status==='entregue')p.status='pago';
+  }else if(s==='entregue'){
+    p.status=pedidoPago(p)?'pago':'entregue';
+  }
   await save();renderPedidos();renderPagos();renderResumo();toast(s==='pago'?'✓ Marcado como pago':'✓ Marcado como entregue');
 }
 async function aprovarPedido(id){
@@ -1104,7 +1111,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open')}
 // ── PAGOS ──
 function renderPagos(){
   const is_admin=curUser?.role==='admin';
-  const list=pedidos.filter(p=>p.status==='pago').slice().reverse();
+  const list=pedidos.filter(pedidoPago).slice().reverse();
   if(!list.length){document.getElementById('pagos-list').innerHTML='<div class="empty"><i class="ti ti-coin-off"></i><span>Nenhum pagamento ainda</span></div>';return}
   const total=list.reduce((s,p)=>s+p.valor,0);
   let html=`<div class="stats" style="margin-bottom:14px"><div class="sc" style="grid-column:span 2"><div class="sc-l">Total recebido</div><div class="sc-v cg">${R$(total)}</div><div class="sc-sub">${list.length} pedidos pagos</div></div></div>`;
@@ -1121,7 +1128,7 @@ function setPeriodo(p,el){periodo=p;document.querySelectorAll('.ptab').forEach(x
 function renderResumo(){
   const pLabel={semana:'últimos 7 dias',mes:'este mês',ano:'este ano'};
   const allF=filterByPeriod(pedidos,'data');
-  const pgF=filterByPeriod(pedidos.filter(p=>p.status==='pago'),'dataPago');
+  const pgF=filterByPeriod(pedidos.filter(pedidoPago),'dataPago');
   const total=allF.reduce((s,p)=>s+p.valor,0);
   const totQtd=allF.reduce((s,p)=>s+p.qtd,0);
   const lotesCount=new Set(allF.flatMap(p=>Array.isArray(p.lotesUsados)&&p.lotesUsados.length?p.lotesUsados.map(a=>a.id):[p.loteId]).filter(Boolean)).size;
@@ -1145,7 +1152,7 @@ function renderResumo(){
   document.getElementById('resumo-content').innerHTML=html;
 }
 function abrirDetalhe(tipo){
-  const allF=filterByPeriod(pedidos,'data');const pgF=filterByPeriod(pedidos.filter(p=>p.status==='pago'),'dataPago');
+  const allF=filterByPeriod(pedidos,'data');const pgF=filterByPeriod(pedidos.filter(pedidoPago),'dataPago');
   let html='';
   if(tipo==='geral'){
     document.getElementById('det-title').textContent='Resumo detalhado';
