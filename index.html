@@ -355,7 +355,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
     <div class="nt active" onclick="goTab('pedidos')" id="nt-pedidos"><i class="ti ti-clipboard-list"></i>Pedidos<div class="nt-dot" id="dot-pedidos"></div></div>
     <div class="nt admin-only" onclick="goTab('pagos')" id="nt-pagos"><i class="ti ti-circle-check"></i>Pagos</div>
     <div class="nt admin-only" onclick="goTab('resumo')" id="nt-resumo"><i class="ti ti-chart-bar"></i>Resumo</div>
-    <div class="nt admin-only" onclick="goTab('historico')" id="nt-historico"><i class="ti ti-users"></i>Clientes</div>
+    <div class="nt admin-only" onclick="goTab('historico')" id="nt-historico"><i class="ti ti-calendar-repeat"></i>Programados</div>
     <div class="nt admin-only" onclick="goTab('config')" id="nt-config"><i class="ti ti-settings"></i>Config</div>
   </div>
   <div class="content">
@@ -393,9 +393,8 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 
     <!-- HISTÓRICO -->
     <div id="tc-historico" style="display:none">
-      <div class="hsearch"><i class="ti ti-search"></i><input type="text" id="hist-input" placeholder="Buscar cliente..." oninput="renderHistorico()"></div>
-      <div id="hist-pills"></div>
-      <div id="hist-det"></div>
+      <button class="fab" onclick="openModalPedido('programado')"><i class="ti ti-plus"></i> Novo programado</button>
+      <div id="programados-tab-list"></div>
     </div>
 
     <!-- CONFIG -->
@@ -405,6 +404,8 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
       <button class="fab" style="margin-bottom:20px" onclick="openModalLote()"><img class="btn-ico" src="stock-icon.jpg" alt=""> Cadastrar lote</button>
       <div class="slabel">Pedidos programados</div>
       <div id="programacoes-list"></div>
+      <div class="slabel">Clientes</div>
+      <button class="export-btn" onclick="abrirClientesPopup()"><i class="ti ti-users"></i> Ver clientes</button>
       <div class="slabel">Revendedores</div>
       <div class="add-box">
         <h4><i class="ti ti-user-plus" style="font-size:15px"></i> Adicionar revendedor</h4>
@@ -426,6 +427,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
   <div class="modal">
     <div class="mhandle"></div>
     <div class="mtitle" id="mo-ped-title">Novo pedido</div>
+    <input type="hidden" id="m-prog-id">
     <div class="mf"><label>Nome do cliente</label><input type="text" id="m-nome" placeholder="Ex: Mariana Silva"></div>
     <div class="mrow">
       <div class="mf"><label>Quantidade</label><input type="number" id="m-qtd" placeholder="0" min="1" oninput="calcTotal()"></div>
@@ -488,6 +490,22 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
     </div>
     <div class="mf"><label>Pagamento</label>
       <select id="e-pgto"><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="fiado">Fiado</option><option value="doacao">Doação</option></select>
+    </div>
+    <div class="mrow">
+      <div class="mf"><label>Data</label><input type="date" id="e-data"></div>
+      <div class="mf"><label>Status</label><select id="e-status"><option value="solicitado">Aguardando aprovação</option><option value="espera">Lista de espera</option><option value="pedido">Pendente</option><option value="entregue">Entregue</option><option value="pago">Pago e entregue</option></select></div>
+    </div>
+    <div class="mrow">
+      <div class="mf"><label>Desconto (R$)</label><input type="number" id="e-desc" min="0" step="0.50"></div>
+      <label class="chip" style="display:flex;align-items:center;gap:7px;margin-bottom:10px"><input type="checkbox" id="e-entrega"> Taxa de entrega R$ 5,00</label>
+    </div>
+    <div class="mrow">
+      <div class="mf"><label>Revendedor</label><select id="e-rev"></select></div>
+      <div class="mf"><label>Lote</label><select id="e-lote"></select></div>
+    </div>
+    <div class="mrow">
+      <label class="chip" style="display:flex;align-items:center;gap:7px;margin-bottom:10px"><input type="checkbox" id="e-pago"> Pagamento recebido</label>
+      <div class="mf"><label>Data pagamento</label><input type="date" id="e-data-pago"></div>
     </div>
     <div class="mf"><label>Observação</label><textarea id="e-obs"></textarea></div>
     <div class="mbtns">
@@ -742,23 +760,29 @@ function programacaoVenceNaData(p,data){
   if(p.freq==='mensal')return d.getDate()===Number(p.diaMes);
   return false;
 }
-function proximaDataProgramada(p){
-  for(let i=0;i<=5;i++){const data=addDays(today(),i);if(programacaoVenceNaData(p,data))return data}
+function proximaDataProgramada(p,base=today(),incluirBase=true){
+  for(let i=incluirBase?0:1;i<=370;i++){const data=addDays(base,i);if(programacaoVenceNaData(p,data))return data}
   return null;
+}
+function criarPedidoProgramado(p,data){
+  if(!data)return false;
+  const marca=`Programado #${p.id}`;
+  const jaExiste=pedidos.some(o=>o.data===data&&o.rev===p.rev&&String(o.obs||'').includes(marca));
+  if(jaExiste)return false;
+  pedidos.push({id:nextId++,cliente:p.cliente,qtd:p.qtd,valor:p.valor,desconto:p.desconto||0,taxaEntrega:p.taxaEntrega||0,status:'espera',rev:p.rev,data,pgto:p.pgto||'pix',obs:p.obs?`${marca} · ${p.obs}`:marca,loteId:null,lotesUsados:null});
+  return true;
+}
+function programacaoIdDoPedido(p){const m=String(p.obs||'').match(/Programado #(\d+)/);return m?Number(m[1]):null}
+function criarProximoProgramadoDoPedido(p){
+  const prog=programacoes.find(x=>x.id===programacaoIdDoPedido(p)&&x.ativo!==false);
+  if(!prog)return false;
+  return criarPedidoProgramado(prog,proximaDataProgramada(prog,p.data,false));
 }
 async function gerarPedidosProgramados(shouldSave=true){
   let criou=0;
   programacoes.filter(p=>p.ativo!==false).forEach(p=>{
     const data=proximaDataProgramada(p);
-    if(!data)return;
-    const marca=`Programado #${p.id}`;
-    const jaExiste=pedidos.some(o=>o.data===data&&o.rev===p.rev&&o.obs?.includes(marca));
-    if(jaExiste)return;
-    const aloc=alocarLotes(p.qtd);
-    const status=aloc?'pedido':'espera';
-    if(remoteMode&&!lotesJsonReady&&(!aloc||aloc.length>1||p.taxaEntrega>0))return;
-    pedidos.push({id:nextId++,cliente:p.cliente,qtd:p.qtd,valor:p.valor,desconto:p.desconto||0,taxaEntrega:p.taxaEntrega||0,status,rev:p.rev,data,pgto:p.pgto||'pix',obs:p.obs?`${marca} · ${p.obs}`:marca,loteId:aloc?aloc[0].id:null,lotesUsados:aloc||null});
-    criou++;
+    if(criarPedidoProgramado(p,data))criou++;
   });
   if(criou&&shouldSave){await save();renderPedidos()}
   return criou;
@@ -993,6 +1017,7 @@ async function aprovarPedido(id){
   if(remoteMode&&aloc.length>1&&!lotesJsonReady){toast('Execute a migração de divisão por lote no Supabase.');return}
   if(aloc.length>1&&!confirm(`Esse pedido excede o lote atual. Usar ${aloc.map(a=>`${a.qtd} qtd do ${loteNome(lotes.find(l=>l.id===a.id))}`).join(' + ')}?`))return;
   p.loteId=aloc[0].id;p.lotesUsados=aloc;p.status='pedido';
+  criarProximoProgramadoDoPedido(p);
   await save();renderPedidos();toast('✓ Pedido aprovado!');
 }
 async function moverEsperaParaPedidos(id){
@@ -1001,7 +1026,8 @@ async function moverEsperaParaPedidos(id){
   if(!aloc){toast('Ainda não há estoque suficiente.');return}
   if(remoteMode&&aloc.length>1&&!lotesJsonReady){toast('Execute a migração de divisão por lote no Supabase.');return}
   p.loteId=aloc[0].id;p.lotesUsados=aloc;p.status='pedido';
-  await save();renderPedidos();toast('Pedido movido para pedidos.');
+  criarProximoProgramadoDoPedido(p);
+  await save();renderPedidos();renderHistorico();toast('Pedido movido para pedidos.');
 }
 
 // ── MODAL PEDIDO ──
@@ -1020,16 +1046,18 @@ function togglePedidoProgramado(){
   document.getElementById('m-monthday-field').style.display=tipo==='programado'&&freq==='mensal'?'':'none';
   document.getElementById('m-start-field').style.display=tipo==='programado'&&freq==='quinzenal'?'':'none';
 }
-function openModalPedido(){
+function openModalPedido(tipoInicial='avulso'){
   const revs=users.filter(u=>u.role==='rev');
   document.getElementById('m-rev').innerHTML=revs.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
   document.getElementById('m-rev-f').style.display=curUser.role==='admin'&&revs.length?'':'none';
+  document.getElementById('mo-ped-title').textContent=tipoInicial==='programado'?'Novo programado':'Novo pedido';
+  document.getElementById('m-prog-id').value='';
   ['m-nome','m-obs'].forEach(id=>document.getElementById(id).value='');
   ['m-qtd','m-desc'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('m-pgto').value='pix';
   document.getElementById('m-entrega').checked=false;
   document.getElementById('m-espera').checked=false;
-  document.getElementById('m-tipo').value='avulso';
+  document.getElementById('m-tipo').value=tipoInicial;
   document.getElementById('m-freq').value='semanal';
   document.getElementById('m-weekday').value=String(new Date().getDay());
   document.getElementById('m-monthday').value=String(new Date().getDate());
@@ -1054,13 +1082,19 @@ async function salvarPedido(){
   if(document.getElementById('m-tipo').value==='programado'){
     if(remoteMode&&!recurringReady){toast('Execute a migração de pedidos programados no Supabase.');return}
     if(remoteMode&&!recurringExtraReady&&(taxaEntrega>0||document.getElementById('m-freq').value==='quinzenal')){toast('Execute a migração nova no Supabase.');return}
+    const progId=parseInt(document.getElementById('m-prog-id').value)||null;
     const freq=document.getElementById('m-freq').value;
     const diaSemana=freq==='semanal'?parseInt(document.getElementById('m-weekday').value):null;
     const diaMes=freq==='mensal'?Math.min(31,Math.max(1,parseInt(document.getElementById('m-monthday').value)||1)):null;
     const dataInicio=freq==='quinzenal'?(document.getElementById('m-start').value||today()):null;
-    programacoes.push({id:nextProgId++,cliente:nome,qtd,valor:val,desconto:descontoFinal,taxaEntrega,rev,pgto,obs,freq,diaSemana,diaMes,dataInicio,ativo:true});
+    if(progId){
+      const pr=programacoes.find(p=>p.id===progId);if(!pr)return;
+      Object.assign(pr,{cliente:nome,qtd,valor:val,desconto:descontoFinal,taxaEntrega,rev,pgto,obs,freq,diaSemana,diaMes,dataInicio,ativo:true});
+    }else{
+      programacoes.push({id:nextProgId++,cliente:nome,qtd,valor:val,desconto:descontoFinal,taxaEntrega,rev,pgto,obs,freq,diaSemana,diaMes,dataInicio,ativo:true});
+    }
     await gerarPedidosProgramados(false);
-    await save();closeModal('mo-pedido');renderPedidos();renderConfig();toast('✓ Pedido programado salvo!');
+    await save();closeModal('mo-pedido');renderPedidos();renderConfig();renderHistorico();toast('Pedido programado salvo!');
     return;
   }
   if(listaEspera){
@@ -1086,6 +1120,16 @@ function openEdit(id){
   document.getElementById('e-qtd').value=p.qtd;
   document.getElementById('e-val').value=p.valor;
   document.getElementById('e-pgto').value=p.pgto||'pix';
+  document.getElementById('e-data').value=p.data||today();
+  document.getElementById('e-status').value=p.status||'pedido';
+  document.getElementById('e-desc').value=p.desconto||0;
+  document.getElementById('e-entrega').checked=Boolean(p.taxaEntrega);
+  document.getElementById('e-pago').checked=pedidoPago(p);
+  document.getElementById('e-data-pago').value=p.dataPago||today();
+  document.getElementById('e-rev').innerHTML=users.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
+  document.getElementById('e-rev').value=p.rev;
+  document.getElementById('e-lote').innerHTML='<option value="">Sem lote</option>'+lotes.map(l=>`<option value="${l.id}">${loteNome(l)} (${loteRest(l)} restantes)</option>`).join('');
+  document.getElementById('e-lote').value=p.loteId||'';
   document.getElementById('e-obs').value=p.obs||'';
   document.getElementById('mo-edit').classList.add('open');
 }
@@ -1098,9 +1142,18 @@ async function salvarEdicao(){
   p.pgto=document.getElementById('e-pgto').value;
   if(!nome||qtd<=0||(p.pgto!=='doacao'&&val<=0)){toast('⚠ Preencha todos os campos');return}
   p.cliente=nome;p.qtd=qtd;p.valor=p.pgto==='doacao'?0:val;
-  if(p.pgto==='doacao')p.desconto=qtd*PRECO;
+  p.data=document.getElementById('e-data').value||today();
+  p.status=document.getElementById('e-status').value;
+  p.desconto=parseFloat(document.getElementById('e-desc').value)||0;
+  p.taxaEntrega=document.getElementById('e-entrega').checked&&p.pgto!=='doacao'?TAXA_ENTREGA:0;
+  p.rev=document.getElementById('e-rev').value||p.rev;
+  const loteId=document.getElementById('e-lote').value;
+  p.loteId=loteId?Number(loteId):null;p.lotesUsados=null;
+  p.dataPago=document.getElementById('e-pago').checked?(document.getElementById('e-data-pago').value||today()):null;
+  if(p.status==='pago'&&!p.dataPago)p.dataPago=today();
+  if(p.pgto==='doacao'){p.desconto=qtd*PRECO;p.valor=0}
   p.obs=document.getElementById('e-obs').value.trim();
-  await save();closeModal('mo-edit');renderPedidos();toast('✓ Atualizado!');
+  await save();closeModal('mo-edit');renderPedidos();renderPagos();renderResumo();toast('Atualizado!');
 }
 async function excluir(id){
   if(!confirm('Excluir este pedido?'))return;
@@ -1121,6 +1174,11 @@ function renderPagos(){
     html+=`<div class="pago-card"><div class="pago-dot"></div><div class="pago-body"><div class="pago-nome">${p.cliente}</div><div class="pago-meta">${p.qtd} qtd · <span class="pp ${pgtoClass(p.pgto)}">${pgtoLabel(p.pgto)}</span> · ${revName(p.rev)}${p.obs?` · <em>${p.obs}</em>`:''}</div></div><div class="pago-val">${R$(p.valor)}</div>${is_admin?`<button class="del-btn" onclick="excluir(${p.id})" title="Excluir pedido"><i class="ti ti-trash" style="font-size:15px"></i></button>`:''}</div>`;
   });
   document.getElementById('pagos-list').innerHTML=html;
+  if(is_admin)[...document.querySelectorAll('#pagos-list .pago-card')].forEach((card,i)=>{
+    const btn=document.createElement('button');
+    btn.className='role-btn admin';btn.textContent='Editar';btn.onclick=()=>openEdit(list[i].id);
+    card.appendChild(btn);
+  });
 }
 
 // ── RESUMO ──
@@ -1199,6 +1257,8 @@ function abrirDetalhe(tipo){
 
 // ── HISTÓRICO ──
 function renderHistorico(){
+  const progEl=document.getElementById('programados-tab-list');
+  if(progEl){progEl.innerHTML=htmlProgramacoes(true);return}
   const q=(document.getElementById('hist-input')?.value||'').trim().toLowerCase();
   const nomes=[...new Set(pedidos.map(p=>p.cliente))].sort();
   const fil=q?nomes.filter(n=>n.toLowerCase().includes(q)):nomes;
@@ -1227,6 +1287,46 @@ function renderHistorico(){
 function verCliente(n){histCliente=n;document.getElementById('hist-input').value=n;renderHistorico()}
 
 // ── CONFIG ──
+function htmlProgramacoes(){
+  if(!programacoes.length)return '<div class="empty" style="padding:1.5rem"><i class="ti ti-calendar-off"></i><span>Nenhum pedido programado</span></div>';
+  return programacoes.slice().reverse().map(p=>{
+    const prox=proximaDataProgramada(p);
+    const espera=pedidos.filter(o=>String(o.obs||'').includes(`Programado #${p.id}`)&&o.status==='espera').length;
+    return `<div class="user-item"><div class="u-left"><div class="u-av">${ini(p.cliente)}</div><div><div class="u-name">${p.cliente}</div><div class="u-meta">${p.qtd} qtd · ${freqLabel(p)} · ${revName(p.rev)}${prox?` · Próx. ${fmtFull(prox)}`:''}${espera?` · ${espera} em espera`:''}</div></div></div><div class="user-actions"><button class="role-btn admin" onclick="openProgramacao(${p.id})">Editar</button><button class="del-btn" onclick="excluirProgramacao(${p.id})"><i class="ti ti-trash" style="font-size:15px"></i></button></div></div>`;
+  }).join('');
+}
+function openProgramacao(id){
+  const p=programacoes.find(x=>x.id===id);if(!p)return;
+  openModalPedido('programado');
+  document.getElementById('mo-ped-title').textContent='Editar programado';
+  document.getElementById('m-prog-id').value=p.id;
+  document.getElementById('m-nome').value=p.cliente;
+  document.getElementById('m-qtd').value=p.qtd;
+  document.getElementById('m-desc').value=p.desconto||0;
+  document.getElementById('m-entrega').checked=Boolean(p.taxaEntrega);
+  document.getElementById('m-pgto').value=p.pgto||'pix';
+  document.getElementById('m-rev').value=p.rev;
+  document.getElementById('m-obs').value=p.obs||'';
+  document.getElementById('m-freq').value=p.freq||'semanal';
+  document.getElementById('m-weekday').value=String(p.diaSemana??new Date().getDay());
+  document.getElementById('m-monthday').value=String(p.diaMes||new Date().getDate());
+  document.getElementById('m-start').value=p.dataInicio||today();
+  togglePedidoProgramado();calcTotal();
+}
+function abrirClientesPopup(cliente=null){
+  document.getElementById('det-title').textContent=cliente||'Clientes';
+  const nomes=cliente?[cliente]:[...new Set(pedidos.map(p=>p.cliente))].sort();
+  let html='';
+  nomes.forEach(n=>{
+    const list=pedidos.filter(p=>p.cliente.toLowerCase()===n.toLowerCase()).slice().reverse();
+    const total=list.reduce((s,p)=>s+p.valor,0);
+    html+=`<div class="det-sub">${n}</div><div class="det-row"><span>Pedidos</span><strong>${list.length}</strong></div><div class="det-row"><span>Total</span><strong>${R$(total)}</strong></div>`;
+    list.slice(0,8).forEach(p=>html+=`<div class="pago-meta">${fmtFull(p.data)} · ${p.qtd} qtd · ${spLabel(p.status)} · ${revName(p.rev)}</div>`);
+  });
+  if(!html)html='<div class="empty" style="padding:1.5rem"><i class="ti ti-users-off"></i><span>Nenhum cliente ainda</span></div>';
+  document.getElementById('det-body').innerHTML=html;
+  document.getElementById('mo-det').classList.add('open');
+}
 function renderConfig(){
   let lh='';
   lotes.slice().reverse().forEach(l=>{
@@ -1247,11 +1347,12 @@ function renderConfig(){
     </div>`;
   });
   document.getElementById('lotes-list').innerHTML=lh||'<div class="empty" style="padding:1.5rem"><i class="ti ti-package-off"></i><span>Nenhum lote cadastrado</span></div>';
+  document.getElementById('programacoes-list').innerHTML=htmlProgramacoes();
   let ph='';
   programacoes.slice().reverse().forEach(p=>{
     ph+=`<div class="user-item"><div class="u-left"><div class="u-av">${ini(p.cliente)}</div><div><div class="u-name">${p.cliente}</div><div class="u-meta">${p.qtd} qtd · ${freqLabel(p)} · ${revName(p.rev)}</div></div></div><div class="user-actions"><button class="del-btn" onclick="excluirProgramacao(${p.id})"><i class="ti ti-trash" style="font-size:15px"></i></button></div></div>`;
   });
-  document.getElementById('programacoes-list').innerHTML=ph||'<div class="empty" style="padding:1.5rem"><i class="ti ti-calendar-off"></i><span>Nenhum pedido programado</span></div>';
+  // Lista programada renderizada por htmlProgramacoes().
   const admins=users.filter(u=>u.role==='admin');
   const revs=users.filter(u=>u.role==='rev');
   document.getElementById('cap-warn').style.display=revs.length>=5?'flex':'none';
