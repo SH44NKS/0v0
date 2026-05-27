@@ -402,8 +402,6 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
       <div class="slabel" style="margin-top:0">Estoque / Lotes</div>
       <div id="lotes-list"></div>
       <button class="fab" style="margin-bottom:20px" onclick="openModalLote()"><img class="btn-ico" src="stock-icon.jpg" alt=""> Cadastrar lote</button>
-      <div class="slabel">Pedidos programados</div>
-      <div id="programacoes-list"></div>
       <div class="slabel">Clientes</div>
       <button class="export-btn" onclick="abrirClientesPopup()"><i class="ti ti-users"></i> Ver clientes</button>
       <div class="slabel">Revendedores</div>
@@ -1347,12 +1345,6 @@ function renderConfig(){
     </div>`;
   });
   document.getElementById('lotes-list').innerHTML=lh||'<div class="empty" style="padding:1.5rem"><i class="ti ti-package-off"></i><span>Nenhum lote cadastrado</span></div>';
-  document.getElementById('programacoes-list').innerHTML=htmlProgramacoes();
-  let ph='';
-  programacoes.slice().reverse().forEach(p=>{
-    ph+=`<div class="user-item"><div class="u-left"><div class="u-av">${ini(p.cliente)}</div><div><div class="u-name">${p.cliente}</div><div class="u-meta">${p.qtd} qtd · ${freqLabel(p)} · ${revName(p.rev)}</div></div></div><div class="user-actions"><button class="del-btn" onclick="excluirProgramacao(${p.id})"><i class="ti ti-trash" style="font-size:15px"></i></button></div></div>`;
-  });
-  // Lista programada renderizada por htmlProgramacoes().
   const admins=users.filter(u=>u.role==='admin');
   const revs=users.filter(u=>u.role==='rev');
   document.getElementById('cap-warn').style.display=revs.length>=5?'flex':'none';
