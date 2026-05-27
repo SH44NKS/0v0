@@ -26,7 +26,7 @@
   --rr:10px;--rl:16px;--rx:20px;--rf:999px;
   --sh:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.04);
   --shl:0 8px 30px rgba(0,0,0,.1);
-  --fh:'Syne',sans-serif;--fb:'DM Sans',sans-serif;
+  --fh:'DM Sans',sans-serif;--fb:'DM Sans',sans-serif;
 }
 :root[data-theme=dark]{
   --g:#14D6A4;--gd:#5EE0BD;--gp:#0D2E26;--gt:#E0FAF4;
@@ -484,19 +484,20 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
     <div class="mf"><label>Nome do cliente</label><input type="text" id="e-nome"></div>
     <div class="mrow">
       <div class="mf"><label>Quantidade</label><input type="number" id="e-qtd" min="1"></div>
-      <div class="mf"><label>Valor (R$)</label><input type="number" id="e-val" step="0.50"></div>
+      <div class="mf"><label>Valor antes do desconto (R$)</label><input type="number" id="e-val" step="0.50" oninput="calcTotalEdit()"></div>
     </div>
     <div class="mf"><label>Pagamento</label>
-      <select id="e-pgto"><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="fiado">Fiado</option><option value="doacao">Doação</option></select>
+      <select id="e-pgto" onchange="calcTotalEdit()"><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="fiado">Fiado</option><option value="doacao">Doação</option></select>
     </div>
     <div class="mrow">
       <div class="mf"><label>Data</label><input type="date" id="e-data"></div>
       <div class="mf"><label>Status</label><select id="e-status"><option value="solicitado">Aguardando aprovação</option><option value="espera">Lista de espera</option><option value="pedido">Pendente</option><option value="entregue">Entregue</option><option value="pago">Pago e entregue</option></select></div>
     </div>
     <div class="mrow">
-      <div class="mf"><label>Desconto (R$)</label><input type="number" id="e-desc" min="0" step="0.50"></div>
-      <label class="chip" style="display:flex;align-items:center;gap:7px;margin-bottom:10px"><input type="checkbox" id="e-entrega"> Taxa de entrega R$ 5,00</label>
+      <div class="mf"><label>Desconto (R$)</label><input type="number" id="e-desc" min="0" step="0.50" oninput="calcTotalEdit()"></div>
+      <label class="chip" style="display:flex;align-items:center;gap:7px;margin-bottom:10px"><input type="checkbox" id="e-entrega" onchange="calcTotalEdit()"> Taxa de entrega R$ 5,00</label>
     </div>
+    <div class="calc-preview"><span>Total corrigido</span><strong id="e-total">R$ 0,00</strong></div>
     <div class="mrow">
       <div class="mf"><label>Revendedor</label><select id="e-rev"></select></div>
       <div class="mf"><label>Lote</label><select id="e-lote"></select></div>
@@ -969,6 +970,7 @@ function renderPedidos(){
           <div class="pd-item"><div class="pd-lbl">Status</div><div class="pd-val"><span class="sp ${spClass(p.status)}">${spLabel(p.status)}</span></div></div>
           ${p.status==='espera'?`<div class="pd-item"><div class="pd-lbl">Lote esperado</div><div class="pd-val"><span class="wait-qty small">${p.qtd} qtd</span></div></div>`:''}
           ${is_admin?`<div class="pd-item"><div class="pd-lbl">Valor</div><div class="pd-val">${R$(p.valor)}${p.desconto?` <span style="font-size:11px;color:var(--t3)">(-${R$(p.desconto)})</span>`:''}</div></div>`:''}
+          ${is_admin&&p.desconto?`<div class="pd-item"><div class="pd-lbl">Desconto</div><div class="pd-val">-${R$(p.desconto)}</div></div>`:''}
           <div class="pd-item"><div class="pd-lbl">Pagamento</div><div class="pd-val"><span class="pp ${pgtoClass(p.pgto)}">${pgtoLabel(p.pgto)}</span></div></div>
           ${loteTxt?`<div class="pd-item"><div class="pd-lbl">Lote</div><div class="pd-val">${loteTxt}</div></div>`:`<div class="pd-item"><div class="pd-lbl">Data</div><div class="pd-val">${fmtFull(p.data)}</div></div>`}
           ${is_admin?`<div class="pd-item"><div class="pd-lbl">Revendedor</div><div class="pd-val">${revName(p.rev)}</div></div>`:''}
@@ -1035,6 +1037,14 @@ function calcTotal(){
   const pgto=document.getElementById('m-pgto')?.value;
   const entrega=document.getElementById('m-entrega')?.checked?TAXA_ENTREGA:0;
   document.getElementById('m-total').textContent=pgto==='doacao'?R$(0):R$(Math.max(0,q*PRECO-d)+entrega);
+}
+function calcTotalEdit(){
+  const base=parseFloat(document.getElementById('e-val')?.value)||0;
+  const d=parseFloat(document.getElementById('e-desc')?.value)||0;
+  const pgto=document.getElementById('e-pgto')?.value;
+  const entrega=document.getElementById('e-entrega')?.checked?TAXA_ENTREGA:0;
+  const out=document.getElementById('e-total');
+  if(out)out.textContent=pgto==='doacao'?R$(0):R$(Math.max(0,base-d)+entrega);
 }
 function togglePedidoProgramado(){
   const tipo=document.getElementById('m-tipo')?.value||'avulso';
@@ -1116,7 +1126,7 @@ function openEdit(id){
   document.getElementById('e-id').value=id;
   document.getElementById('e-nome').value=p.cliente;
   document.getElementById('e-qtd').value=p.qtd;
-  document.getElementById('e-val').value=p.valor;
+  document.getElementById('e-val').value=p.pgto==='doacao'?0:Math.max(0,(Number(p.valor)||0)+(Number(p.desconto)||0)-(Number(p.taxaEntrega)||0));
   document.getElementById('e-pgto').value=p.pgto||'pix';
   document.getElementById('e-data').value=p.data||today();
   document.getElementById('e-status').value=p.status||'pedido';
@@ -1129,6 +1139,7 @@ function openEdit(id){
   document.getElementById('e-lote').innerHTML='<option value="">Sem lote</option>'+lotes.map(l=>`<option value="${l.id}">${loteNome(l)} (${loteRest(l)} restantes)</option>`).join('');
   document.getElementById('e-lote').value=p.loteId||'';
   document.getElementById('e-obs').value=p.obs||'';
+  calcTotalEdit();
   document.getElementById('mo-edit').classList.add('open');
 }
 async function salvarEdicao(){
@@ -1139,11 +1150,12 @@ async function salvarEdicao(){
   const val=parseFloat(document.getElementById('e-val').value)||0;
   p.pgto=document.getElementById('e-pgto').value;
   if(!nome||qtd<=0||(p.pgto!=='doacao'&&val<=0)){toast('⚠ Preencha todos os campos');return}
-  p.cliente=nome;p.qtd=qtd;p.valor=p.pgto==='doacao'?0:val;
+  p.cliente=nome;p.qtd=qtd;
   p.data=document.getElementById('e-data').value||today();
   p.status=document.getElementById('e-status').value;
   p.desconto=parseFloat(document.getElementById('e-desc').value)||0;
   p.taxaEntrega=document.getElementById('e-entrega').checked&&p.pgto!=='doacao'?TAXA_ENTREGA:0;
+  p.valor=p.pgto==='doacao'?0:Math.max(0,val-p.desconto)+p.taxaEntrega;
   p.rev=document.getElementById('e-rev').value||p.rev;
   const loteId=document.getElementById('e-lote').value;
   p.loteId=loteId?Number(loteId):null;p.lotesUsados=null;
@@ -1488,3 +1500,4 @@ function fecharTutorialInstalacao(remember){
 </script>
 </body>
 </html>
+
