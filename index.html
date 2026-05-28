@@ -141,6 +141,8 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 /* NOTIF */
 .notif{display:flex;align-items:center;gap:8px;background:var(--ap);border:1px solid #FCD34D;border-radius:var(--rr);padding:9px 12px;margin-bottom:12px;font-size:13px;color:#92400E}
 .notif i{font-size:16px;flex-shrink:0}
+.wait-summary{display:grid;grid-template-columns:1fr auto;gap:7px 10px;align-items:center;width:100%}
+.wait-summary span{font-weight:700}
 
 /* PEDIDO CARD - COMPACT + EXPANDABLE */
 .pc{background:var(--s);border:1px solid var(--br);border-radius:var(--rl);margin-bottom:8px;overflow:hidden;transition:border-color .2s,box-shadow .2s}
@@ -941,12 +943,16 @@ function renderPedidos(){
   if(filtro==='pedido')list=list.filter(p=>['pedido','solicitado'].includes(p.status));
   if(filtro==='entregue')list=list.filter(p=>p.status==='entregue');
   if(filtro==='espera')list=list.filter(p=>p.status==='espera');
-  list=list.slice().reverse();
+  list=filtro==='espera'
+    ?list.slice().sort((a,b)=>String(a.data||'').localeCompare(String(b.data||''))||a.id-b.id)
+    :list.slice().reverse();
 
   if(!list.length){document.getElementById('pedidos-list').innerHTML='<div class="empty"><i class="ti ti-clipboard-off"></i><span>Nenhum pedido aqui</span></div>';return}
 
   const stripeC=s=>({solicitado:'stripe-sol',pedido:'stripe-ped',entregue:'stripe-ent',pago:'stripe-pag'}[s]||'stripe-ped');
-  const esperaInfo=filtro==='espera'?`<div class="notif"><i class="ti ti-package"></i><span>Lote esperado</span><span class="wait-qty">${list.reduce((s,p)=>s+(Number(p.qtd)||0),0)} qtd</span></div>`:'';
+  const esperaTotal=list.reduce((s,p)=>s+(Number(p.qtd)||0),0);
+  const esperaFixos=list.filter(isPedidoFixo).reduce((s,p)=>s+(Number(p.qtd)||0),0);
+  const esperaInfo=filtro==='espera'?`<div class="notif"><i class="ti ti-package"></i><div class="wait-summary"><span>Lote esperado total</span><span class="wait-qty">${esperaTotal} qtd</span><span>Lote esperado fixos</span><span class="wait-qty">${esperaFixos} qtd</span></div></div>`:'';
   document.getElementById('pedidos-list').innerHTML=esperaInfo+list.map(p=>{
     const old=diffDays(p.data)>5;
     const loteTxt=pedidoLoteTexto(p);
