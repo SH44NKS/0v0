@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#F8FAFC" id="meta-theme">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="0v0">
-<title>0v0 – Gestão de Vendas</title>
+<title>0v0 â€“ GestÃ£o de Vendas</title>
 <link rel="icon" href="0v0-icon.jpg">
 <link rel="apple-touch-icon" href="0v0-icon.jpg">
 <link rel="manifest" href="manifest.webmanifest">
@@ -218,7 +218,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 .export-btn:hover{background:var(--bg)}
 .export-btn i{font-size:17px}
 
-/* HISTÓRICO */
+/* HISTÃ“RICO */
 .hsearch{position:relative;margin-bottom:12px}
 .hsearch input{width:100%;padding:10px 14px 10px 38px;border:1px solid var(--br);border-radius:var(--rr);background:var(--s);color:var(--t);font-size:15px;font-family:var(--fb);outline:none;transition:.2s}
 .hsearch input:focus{border-color:var(--g)}
@@ -315,7 +315,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
     <div class="login-brand">
       <div class="login-logo"><img src="0v0-icon.jpg" alt="0v0" onerror="this.parentElement.innerHTML='<i class=ti ti-egg style=font-size:36px;color:var(--g)></i>'"></div>
       <h1><span class="brand-zero">0</span>v<span class="brand-zero">0</span></h1>
-      <p>Gestão simples de vendas</p>
+      <p>GestÃ£o simples de vendas</p>
     </div>
     <div class="login-card">
       <div class="ltabs">
@@ -323,14 +323,14 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
         <div class="ltab" onclick="loginTab('cad',this)">Criar conta</div>
       </div>
       <div id="l-form">
-        <div class="lf"><label>Usuário</label><input type="text" id="l-user" placeholder="Seu usuário" autocomplete="username"></div>
+        <div class="lf"><label>UsuÃ¡rio</label><input type="text" id="l-user" placeholder="Seu usuÃ¡rio" autocomplete="username"></div>
         <div class="lf"><label>Senha</label><input type="password" id="l-pass" placeholder="Sua senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
         <button class="lbtn" onclick="doLogin()">Entrar</button>
       </div>
       <div id="l-cad" style="display:none">
         <div class="lf"><label>Nome completo</label><input type="text" id="c-nome" placeholder="Ex: Ana Lima"></div>
-        <div class="lf"><label>Usuário</label><input type="text" id="c-user" placeholder="Escolha um usuário" autocomplete="username"></div>
-        <div class="lf"><label>Senha</label><input type="password" id="c-pass" placeholder="Mínimo 4 caracteres" autocomplete="new-password"></div>
+        <div class="lf"><label>UsuÃ¡rio</label><input type="text" id="c-user" placeholder="Escolha um usuÃ¡rio" autocomplete="username"></div>
+        <div class="lf"><label>Senha</label><input type="password" id="c-pass" placeholder="MÃ­nimo 4 caracteres" autocomplete="new-password"></div>
         <button class="lbtn" onclick="doRegister()">Criar conta de revendedor</button>
       </div>
       <div id="l-err" class="lerr"></div>
@@ -380,20 +380,23 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
     </div>
 
     <!-- PAGOS -->
-    <div id="tc-pagos" style="display:none"><div id="pagos-list"></div></div>
+    <div id="tc-pagos" style="display:none">
+      <div class="mf admin-only" style="margin-bottom:12px"><label>Vendedor</label><select id="pagos-rev" onchange="setFiltroPagosRev(this.value)"></select></div>
+      <div id="pagos-list"></div>
+    </div>
 
     <!-- RESUMO -->
     <div id="tc-resumo" style="display:none">
       <div class="periodo-tabs">
         <div class="ptab on" onclick="setPeriodo('semana',this)">Semana</div>
-        <div class="ptab" onclick="setPeriodo('mes',this)">Mês</div>
+        <div class="ptab" onclick="setPeriodo('mes',this)">MÃªs</div>
         <div class="ptab" onclick="setPeriodo('ano',this)">Ano</div>
       </div>
       <button class="export-btn" onclick="exportCSV()"><i class="ti ti-file-text"></i> Exportar CSV</button>
       <div id="resumo-content"></div>
     </div>
 
-    <!-- HISTÓRICO -->
+    <!-- HISTÃ“RICO -->
     <div id="tc-historico" style="display:none">
       <button class="fab" onclick="openModalPedido('programado')"><i class="ti ti-plus"></i> Novo programado</button>
       <div id="programados-tab-list"></div>
@@ -411,7 +414,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
         <h4><i class="ti ti-user-plus" style="font-size:15px"></i> Adicionar revendedor</h4>
         <div class="mf"><input type="text" id="u-nome" placeholder="Nome completo"></div>
         <div class="add-row">
-          <input type="text" id="u-user" placeholder="Usuário">
+          <input type="text" id="u-user" placeholder="UsuÃ¡rio">
           <input type="password" id="u-pass" placeholder="Senha">
           <button onclick="addUser()">Adicionar</button>
         </div>
@@ -441,9 +444,9 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
     </div>
     <div id="prog-fields" style="display:none">
       <div class="mrow">
-        <div class="mf"><label>Repetição</label>
+        <div class="mf"><label>RepetiÃ§Ã£o</label>
           <select id="m-freq" onchange="togglePedidoProgramado()">
-            <option value="diario">Diário</option>
+            <option value="diario">DiÃ¡rio</option>
             <option value="semanal">Semanal</option>
             <option value="quinzenal">Quinzenal</option>
             <option value="mensal">Mensal</option>
@@ -451,10 +454,10 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
         </div>
         <div class="mf" id="m-weekday-field"><label>Dia da semana</label>
           <select id="m-weekday">
-            <option value="1">Segunda</option><option value="2">Terça</option><option value="3">Quarta</option><option value="4">Quinta</option><option value="5">Sexta</option><option value="6">Sábado</option><option value="0">Domingo</option>
+            <option value="1">Segunda</option><option value="2">TerÃ§a</option><option value="3">Quarta</option><option value="4">Quinta</option><option value="5">Sexta</option><option value="6">SÃ¡bado</option><option value="0">Domingo</option>
           </select>
         </div>
-        <div class="mf" id="m-monthday-field" style="display:none"><label>Dia do mês</label><input type="number" id="m-monthday" min="1" max="31" value="1"></div>
+        <div class="mf" id="m-monthday-field" style="display:none"><label>Dia do mÃªs</label><input type="number" id="m-monthday" min="1" max="31" value="1"></div>
         <div class="mf" id="m-start-field" style="display:none"><label>Data inicial</label><input type="date" id="m-start"></div>
       </div>
     </div>
@@ -465,11 +468,15 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
     </div>
     <div class="mrow">
       <div class="mf"><label>Pagamento</label>
-        <select id="m-pgto" onchange="calcTotal()"><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="fiado">Fiado</option><option value="doacao">Doação</option></select>
+        <select id="m-pgto" onchange="calcTotal()"><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="fiado">Fiado</option><option value="doacao">DoaÃ§Ã£o</option></select>
       </div>
       <div class="mf admin-only" id="m-rev-f"><label>Revendedor</label><select id="m-rev"></select></div>
     </div>
-    <div class="mf"><label>Observação</label><textarea id="m-obs" placeholder="Pagou metade, vai pagar sexta..."></textarea></div>
+    <div class="mrow">
+      <div class="mf admin-only" id="m-lote-f"><label>Lote do pedido</label><select id="m-lote"></select></div>
+      <div class="mf" id="m-prev-pgto-f" style="display:none"><label>Data prevista pagamento</label><input type="date" id="m-prev-pgto"></div>
+    </div>
+    <div class="mf"><label>ObservaÃ§Ã£o</label><textarea id="m-obs" placeholder="Pagou metade, vai pagar sexta..."></textarea></div>
     <div class="mbtns">
       <button class="m-cancel" onclick="closeModal('mo-pedido')">Cancelar</button>
       <button class="m-save" onclick="salvarPedido()">Salvar pedido</button>
@@ -489,11 +496,11 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
       <div class="mf"><label>Valor antes do desconto (R$)</label><input type="number" id="e-val" step="0.50" oninput="calcTotalEdit()"></div>
     </div>
     <div class="mf"><label>Pagamento</label>
-      <select id="e-pgto" onchange="calcTotalEdit()"><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="fiado">Fiado</option><option value="doacao">Doação</option></select>
+      <select id="e-pgto" onchange="calcTotalEdit()"><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="fiado">Fiado</option><option value="doacao">DoaÃ§Ã£o</option></select>
     </div>
     <div class="mrow">
       <div class="mf"><label>Data</label><input type="date" id="e-data"></div>
-      <div class="mf"><label>Status</label><select id="e-status"><option value="solicitado">Aguardando aprovação</option><option value="espera">Lista de espera</option><option value="pedido">Pendente</option><option value="entregue">Entregue</option><option value="pago">Pago e entregue</option></select></div>
+      <div class="mf"><label>Status</label><select id="e-status"><option value="solicitado">Aguardando aprovaÃ§Ã£o</option><option value="espera">Lista de espera</option><option value="pedido">Pendente</option><option value="entregue">Entregue</option><option value="pago">Pago e entregue</option></select></div>
     </div>
     <div class="mrow">
       <div class="mf"><label>Desconto (R$)</label><input type="number" id="e-desc" min="0" step="0.50" oninput="calcTotalEdit()"></div>
@@ -508,7 +515,12 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
       <label class="chip" style="display:flex;align-items:center;gap:7px;margin-bottom:10px"><input type="checkbox" id="e-pago"> Pagamento recebido</label>
       <div class="mf"><label>Data pagamento</label><input type="date" id="e-data-pago"></div>
     </div>
-    <div class="mf"><label>Observação</label><textarea id="e-obs"></textarea></div>
+    <div class="mrow">
+      <div class="mf"><label>Quantidade paga</label><input type="number" id="e-qtd-paga" min="0"></div>
+      <div class="mf"><label>Quantidade entregue</label><input type="number" id="e-qtd-entregue" min="0"></div>
+    </div>
+    <div class="mf"><label>Data prevista pagamento</label><input type="date" id="e-data-prev-pagamento"></div>
+    <div class="mf"><label>ObservaÃ§Ã£o</label><textarea id="e-obs"></textarea></div>
     <div class="mbtns">
       <button class="m-cancel" onclick="closeModal('mo-edit')">Cancelar</button>
       <button class="m-save" onclick="salvarEdicao()">Atualizar</button>
@@ -525,7 +537,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
     <div class="mf"><label>Data</label><input type="date" id="lote-data"></div>
     <div class="mf"><label>Quantidade</label><input type="number" id="lote-qtd" min="1" placeholder="Ex: 80"></div>
     <label class="chip" style="display:flex;align-items:center;gap:7px;margin-bottom:10px"><input type="checkbox" id="lote-pendente"> Estoque pendente</label>
-    <div class="mf"><label>Observação</label><textarea id="lote-obs" placeholder="Ex: Lote da manhã"></textarea></div>
+    <div class="mf"><label>ObservaÃ§Ã£o</label><textarea id="lote-obs" placeholder="Ex: Lote da manhÃ£"></textarea></div>
     <div class="mbtns">
       <button class="m-cancel" onclick="closeModal('mo-lote')">Cancelar</button>
       <button class="m-save" onclick="salvarLote()">Salvar lote</button>
@@ -549,7 +561,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
     <div class="mhandle"></div>
     <div class="mtitle">Alterar senha</div>
     <div class="mf"><label>Senha atual</label><input type="password" id="senha-atual" autocomplete="current-password"></div>
-    <div class="mf"><label>Nova senha</label><input type="password" id="senha-nova" autocomplete="new-password" placeholder="Mínimo 4 caracteres"></div>
+    <div class="mf"><label>Nova senha</label><input type="password" id="senha-nova" autocomplete="new-password" placeholder="MÃ­nimo 4 caracteres"></div>
     <div class="mf"><label>Confirmar nova senha</label><input type="password" id="senha-confirma" autocomplete="new-password"></div>
     <div class="mbtns">
       <button class="m-cancel" onclick="closeModal('mo-senha')">Cancelar</button>
@@ -578,14 +590,14 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 </div>
 
 <script>
-// ── STATE ──
+// â”€â”€ STATE â”€â”€
 let users=[
   {id:'iuri',name:'Iuri',username:'iuri',pass:'1234',role:'admin'},
 ];
 let pedidos=[];
 let lotes=[];
 let programacoes=[];
-let nextId=1,nextLoteId=1,nextProgId=1,curUser=null,filtro='pedido',filtroRev='todos',periodo='semana',histCliente=null;
+let nextId=1,nextLoteId=1,nextProgId=1,curUser=null,filtro='pedido',filtroRev='todos',filtroPagosRev='todos',periodo='semana',histCliente=null;
 const PRECO=25,VER='0v0-real-clean-v1';
 const BACKEND=window.OVO_CONFIG||{};
 const sbReady=Boolean(BACKEND.SUPABASE_URL&&BACKEND.SUPABASE_ANON_KEY);
@@ -595,14 +607,15 @@ let recurringReady=false;
 let lotesJsonReady=false;
 let lotsStatusReady=false;
 let recurringExtraReady=false;
+let orderPartialReady=false;
 
-// ── HELPERS ──
+// â”€â”€ HELPERS â”€â”€
 const ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 const fmtFull=d=>{if(!d)return'';const[y,m,dd]=d.split('-');return`${dd}/${m}/${y}`};
 const today=()=>new Date().toISOString().slice(0,10);
 const diffDays=d=>Math.floor((new Date()-new Date(d))/864e5);
 const revName=id=>users.find(u=>u.id===id)?.name||id;
-const pgtoLabel=p=>({pix:'Pix',dinheiro:'Dinheiro',fiado:'Fiado',doacao:'Doação'}[p]||p);
+const pgtoLabel=p=>({pix:'Pix',dinheiro:'Dinheiro',fiado:'Fiado',doacao:'DoaÃ§Ã£o'}[p]||p);
 const pgtoClass=p=>({pix:'pp-pix',dinheiro:'pp-din',fiado:'pp-fia',doacao:'pp-doa'}[p]||'');
 const R$=v=>`R$ ${(+v||0).toFixed(2)}`;
 const TAXA_ENTREGA=5;
@@ -612,9 +625,19 @@ const loteRest=l=>Math.max(0,(l?.qtd||0)-loteUsado(l?.id));
 const loteAtivo=()=>lotes.slice().sort((a,b)=>a.id-b.id).find(l=>(l.status||'ativo')==='ativo'&&loteRest(l)>0)||null;
 const loteNome=l=>l?`Lote ${fmtFull(l.data)}`:'Sem lote';
 const myPedidos=()=>curUser.role==='admin'?pedidos:pedidos.filter(p=>p.rev===curUser.id);
-const freqLabel=p=>p.freq==='diario'?'Diário':p.freq==='semanal'?`Semanal (${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][p.diaSemana]})`:p.freq==='quinzenal'?`Quinzenal desde ${fmtFull(p.dataInicio)}`:`Mensal (dia ${p.diaMes})`;
+const freqLabel=p=>p.freq==='diario'?'DiÃ¡rio':p.freq==='semanal'?`Semanal (${['Dom','Seg','Ter','Qua','Qui','Sex','SÃ¡b'][p.diaSemana]})`:p.freq==='quinzenal'?`Quinzenal desde ${fmtFull(p.dataInicio)}`:`Mensal (dia ${p.diaMes})`;
 const isPedidoFixo=p=>String(p.obs||'').includes('Programado #');
-const pedidoPago=p=>Boolean(p.dataPago);
+const qtdPedido=p=>Number(p.qtd)||0;
+const qtdPagaPedido=p=>Math.min(qtdPedido(p),Number(p.qtdPaga)||(p.dataPago?qtdPedido(p):0));
+const qtdEntreguePedido=p=>Math.min(qtdPedido(p),Number(p.qtdEntregue)||(['entregue','pago'].includes(p.status)?qtdPedido(p):0));
+const pedidoPago=p=>qtdPedido(p)>0&&qtdPagaPedido(p)>=qtdPedido(p);
+const pedidoEntregue=p=>qtdPedido(p)>0&&qtdEntreguePedido(p)>=qtdPedido(p);
+const pedidoConcluido=p=>pedidoPago(p)&&pedidoEntregue(p);
+const valorPagoPedido=p=>qtdPedido(p)?(Number(p.valor)||0)*(qtdPagaPedido(p)/qtdPedido(p)):0;
+function atualizarConclusao(p){
+  if(pedidoConcluido(p)){p.status='pago';p.dataPago=p.dataPago||today();return}
+  if(p.status==='pago'||p.status==='entregue')p.status='pedido';
+}
 function vendedoresDoFiltro(base=pedidos){
   const ids=new Set(base.map(p=>p.rev).filter(Boolean));
   users.filter(u=>u.role==='rev').forEach(u=>ids.add(u.id));
@@ -645,6 +668,11 @@ function alocarLotes(qtd){
   }
   return falta>0?null:aloc;
 }
+function alocarLoteSelecionado(qtd,loteId){
+  const l=lotes.find(x=>Number(x.id)===Number(loteId));
+  if(!l||loteRest(l)<qtd)return null;
+  return [{id:l.id,qtd}];
+}
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2300)}
 function sg(k){try{return localStorage.getItem(k)}catch{return null}}
@@ -657,10 +685,11 @@ async function hashPass(pass){
 function toDbOrder(p){
   const row={id:p.id,cliente:p.cliente,qtd:p.qtd,valor:p.valor,desconto:p.desconto||0,status:p.status,rev:p.rev,data:p.data,data_pago:p.dataPago||null,pgto:p.pgto||'pix',obs:p.obs||'',lote_id:p.loteId||null};
   if(lotesJsonReady){row.lotes_json=p.lotesUsados||null;row.taxa_entrega=p.taxaEntrega||0}
+  if(orderPartialReady){row.qtd_paga=qtdPagaPedido(p);row.qtd_entregue=qtdEntreguePedido(p);row.data_prev_pagamento=p.dataPrevPagamento||null}
   return row;
 }
 function fromDbOrder(p){
-  return {id:p.id,cliente:p.cliente,qtd:p.qtd,valor:Number(p.valor)||0,desconto:Number(p.desconto)||0,taxaEntrega:Number(p.taxa_entrega)||0,status:p.status,rev:p.rev,data:p.data,dataPago:p.data_pago||null,pgto:p.pgto||'pix',obs:p.obs||'',loteId:p.lote_id||null,lotesUsados:p.lotes_json||null};
+  return {id:p.id,cliente:p.cliente,qtd:p.qtd,valor:Number(p.valor)||0,desconto:Number(p.desconto)||0,taxaEntrega:Number(p.taxa_entrega)||0,status:p.status,rev:p.rev,data:p.data,dataPago:p.data_pago||null,pgto:p.pgto||'pix',obs:p.obs||'',loteId:p.lote_id||null,lotesUsados:p.lotes_json||null,qtdPaga:Number(p.qtd_paga)||0,qtdEntregue:Number(p.qtd_entregue)||0,dataPrevPagamento:p.data_prev_pagamento||null};
 }
 function toDbLot(l){
   const row={id:l.id,data:l.data,qtd:l.qtd,obs:l.obs||''};
@@ -725,6 +754,7 @@ async function loadRemote(){
   try{
     [u,p,l]=await Promise.all([selectTable('app_users'),selectTable('orders'),selectTable('lots')]);
     try{await api('/orders?select=lotes_json,taxa_entrega&limit=1');lotesJsonReady=true}catch(err){lotesJsonReady=false;console.warn('Colunas novas de pedido indisponiveis',err)}
+    try{await api('/orders?select=qtd_paga,qtd_entregue,data_prev_pagamento&limit=1');orderPartialReady=true}catch(err){orderPartialReady=false;console.warn('Colunas de pagamento parcial indisponiveis',err)}
     try{await api('/lots?select=status&limit=1');lotsStatusReady=true}catch(err){lotsStatusReady=false;console.warn('Status de lote indisponivel',err)}
     try{
       pr=await selectTable('recurring_orders');recurringReady=true;
@@ -770,7 +800,7 @@ function criarPedidoProgramado(p,data){
   const marca=`Programado #${p.id}`;
   const jaExiste=pedidos.some(o=>o.data===data&&o.rev===p.rev&&String(o.obs||'').includes(marca));
   if(jaExiste)return false;
-  pedidos.push({id:nextId++,cliente:p.cliente,qtd:p.qtd,valor:p.valor,desconto:p.desconto||0,taxaEntrega:p.taxaEntrega||0,status:'espera',rev:p.rev,data,pgto:p.pgto||'pix',obs:p.obs?`${marca} · ${p.obs}`:marca,loteId:null,lotesUsados:null});
+  pedidos.push({id:nextId++,cliente:p.cliente,qtd:p.qtd,valor:p.valor,desconto:p.desconto||0,taxaEntrega:p.taxaEntrega||0,status:'espera',rev:p.rev,data,pgto:p.pgto||'pix',obs:p.obs?`${marca} Â· ${p.obs}`:marca,loteId:null,lotesUsados:null,qtdPaga:0,qtdEntregue:0,dataPrevPagamento:null});
   return true;
 }
 function programacaoIdDoPedido(p){const m=String(p.obs||'').match(/Programado #(\d+)/);return m?Number(m[1]):null}
@@ -796,7 +826,7 @@ function filterByPeriod(list,f){
     return dt.getFullYear()===now.getFullYear()});
 }
 
-// ── THEME ──
+// â”€â”€ THEME â”€â”€
 let theme=sg('0v0_theme')||'light';
 function applyTheme(){
   document.documentElement.setAttribute('data-theme',theme);
@@ -808,7 +838,7 @@ function applyTheme(){
 }
 function toggleTheme(){theme=theme==='dark'?'light':'dark';ss('0v0_theme',theme);applyTheme()}
 
-// ── AUTH ──
+// â”€â”€ AUTH â”€â”€
 function loginTab(tab,el){
   document.querySelectorAll('.ltab').forEach(x=>x.classList.remove('on'));el.classList.add('on');
   document.getElementById('l-form').style.display=tab==='login'?'':'none';
@@ -821,15 +851,15 @@ async function doLogin(){
   const p=document.getElementById('l-pass').value;
   const passHash=await hashPass(p);
   const f=users.find(x=>x.username.toLowerCase()===u&&(remoteMode?x.passHash===passHash:x.pass===p));
-  if(!f){showErr('Login ou senha inválida.');return}
+  if(!f){showErr('Login ou senha invÃ¡lida.');return}
   enterDash(f);
 }
 async function doRegister(){
   const nome=document.getElementById('c-nome').value.trim();
   const u=document.getElementById('c-user').value.trim().toLowerCase();
   const p=document.getElementById('c-pass').value;
-  if(!nome||!u||p.length<4){showErr('Preencha tudo (senha mín. 4 caracteres).');return}
-  if(users.find(x=>x.username.toLowerCase()===u)){showErr('Usuário já existe.');return}
+  if(!nome||!u||p.length<4){showErr('Preencha tudo (senha mÃ­n. 4 caracteres).');return}
+  if(users.find(x=>x.username.toLowerCase()===u)){showErr('UsuÃ¡rio jÃ¡ existe.');return}
   if(users.filter(x=>x.role==='rev').length>=5){showErr('Limite de 5 revendedores atingido.');return}
   const nu={id:u,name:nome,username:u,pass:p,passHash:await hashPass(p),role:'rev'};
   users.push(nu);await save();enterDash(nu);
@@ -855,7 +885,7 @@ async function salvarSenha(){
   const nova=document.getElementById('senha-nova').value;
   const confirma=document.getElementById('senha-confirma').value;
   if(nova.length<4){toast('A nova senha precisa ter pelo menos 4 caracteres.');return}
-  if(nova!==confirma){toast('A confirmação não confere.');return}
+  if(nova!==confirma){toast('A confirmaÃ§Ã£o nÃ£o confere.');return}
   const atualOk=remoteMode?curUser.passHash===await hashPass(atual):curUser.pass===atual;
   if(!atualOk){toast('Senha atual incorreta.');return}
   curUser.pass=nova;
@@ -867,7 +897,7 @@ async function salvarSenha(){
   toast('Senha alterada!');
 }
 
-// ── NAV ──
+// â”€â”€ NAV â”€â”€
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
 function goTab(t){
   if(curUser?.role!=='admin'&&['pagos','resumo','historico','config'].includes(t))t='pedidos';
@@ -882,7 +912,7 @@ function goTab(t){
   if(t==='config')renderConfig();
 }
 
-// ── PEDIDOS ──
+// â”€â”€ PEDIDOS â”€â”€
 function setFiltro(f,el){filtro=f;document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));el.classList.add('on');renderPedidos()}
 
 function renderLoteStrip(){
@@ -894,17 +924,17 @@ function renderLoteStrip(){
     const r=la?loteRest(la):0;
     strip.innerHTML=r>0
       ?`<div class="lote-strip"><div class="ls-left"><div class="ls-icon"><img class="stock-ico" src="stock-icon.jpg" alt=""></div><div class="ls-info"><div class="ls-label">${loteNome(la)}</div><div class="ls-bar-wrap"><div class="ls-bar"><div class="ls-fill" style="width:${Math.min(100,((la.qtd-r)/la.qtd)*100)}%"></div></div><span class="ls-qty">${r} restantes</span></div></div></div>${esperaBadge}</div>`
-      :`<div class="lote-empty"><i class="ti ti-alert-triangle" style="font-size:18px"></i><span>Sem estoque disponível</span></div>`;
+      :`<div class="lote-empty"><i class="ti ti-alert-triangle" style="font-size:18px"></i><span>Sem estoque disponÃ­vel</span></div>`;
     return;
   }
-  if(!la){strip.innerHTML=`<div class="lote-empty"><i class="ti ti-alert-triangle" style="font-size:18px"></i><span>Nenhum lote ativo — <b onclick="goTab('config')" style="cursor:pointer;text-decoration:underline">cadastre um lote</b></span></div>`;return}
+  if(!la){strip.innerHTML=`<div class="lote-empty"><i class="ti ti-alert-triangle" style="font-size:18px"></i><span>Nenhum lote ativo â€” <b onclick="goTab('config')" style="cursor:pointer;text-decoration:underline">cadastre um lote</b></span></div>`;return}
   const r=loteRest(la);const pct=la.qtd?Math.min(100,((la.qtd-r)/la.qtd)*100):0;
   const fila=lotes.slice().sort((a,b)=>a.id-b.id).filter(l=>l.id!==la.id&&loteRest(l)>0);
-  strip.innerHTML=`<div class="lote-strip"><div class="ls-left"><div class="ls-icon"><img class="stock-ico" src="stock-icon.jpg" alt=""></div><div class="ls-info"><div class="ls-label">${loteNome(la)}${fila.length?` · +${fila.length} na fila`:''}</div><div class="ls-bar-wrap"><div class="ls-bar"><div class="ls-fill" style="width:${pct}%"></div></div><span class="ls-qty">${r} / ${la.qtd} restantes</span></div></div></div><button class="ls-btn" onclick="goTab('config')">Lotes</button></div>`;
+  strip.innerHTML=`<div class="lote-strip"><div class="ls-left"><div class="ls-icon"><img class="stock-ico" src="stock-icon.jpg" alt=""></div><div class="ls-info"><div class="ls-label">${loteNome(la)}${fila.length?` Â· +${fila.length} na fila`:''}</div><div class="ls-bar-wrap"><div class="ls-bar"><div class="ls-fill" style="width:${pct}%"></div></div><span class="ls-qty">${r} / ${la.qtd} restantes</span></div></div></div><button class="ls-btn" onclick="goTab('config')">Lotes</button></div>`;
 }
 
 const spClass=s=>({solicitado:'sp-sol',pedido:'sp-ped',entregue:'sp-ent',pago:'sp-pag',espera:'sp-sol'}[s]||'sp-ped');
-const spLabel=s=>({solicitado:'Aguard. aprovação',pedido:'Pendente',entregue:'Entregue',pago:'Pago',espera:'Lista de espera'}[s]||s);
+const spLabel=s=>({solicitado:'Aguard. aprovaÃ§Ã£o',pedido:'Pendente',entregue:'Entregue',pago:'Pago',espera:'Lista de espera'}[s]||s);
 
 function renderPedidos(){
   const mp=myPedidos();
@@ -916,9 +946,9 @@ function renderPedidos(){
     revSelect.value=vendedores.some(u=>u.id===current)?current:'todos';
     filtroRev=revSelect.value;
   }
-  const antigos=mp.filter(p=>!['pago','solicitado'].includes(p.status)&&diffDays(p.data)>5);
+  const antigos=mp.filter(p=>!pedidoConcluido(p)&&!['solicitado','espera'].includes(p.status)&&diffDays(p.data)>5);
   document.getElementById('notif-div').innerHTML=antigos.length
-    ?`<div class="notif"><i class="ti ti-alert-circle"></i><span><b>${antigos.length} pedido${antigos.length>1?'s':''}</b> há mais de 5 dias sem pagamento</span></div>`:'';
+    ?`<div class="notif"><i class="ti ti-alert-circle"></i><span><b>${antigos.length} pedido${antigos.length>1?'s':''}</b> hÃ¡ mais de 5 dias sem pagamento</span></div>`:'';
   document.getElementById('dot-pedidos').classList.toggle('show',antigos.length>0);
   renderLoteStrip();
 
@@ -926,22 +956,22 @@ function renderPedidos(){
   if(is_admin){
     const sol=mp.filter(p=>p.status==='solicitado').length;
     document.getElementById('stats-row').innerHTML=`
-      <div class="sc"><div class="sc-l">Aprovar</div><div class="sc-v ca">${sol}</div><div class="sc-sub">solicitações</div></div>
-      <div class="sc"><div class="sc-l">Pendentes</div><div class="sc-v">${mp.filter(p=>p.status==='pedido').length}</div><div class="sc-sub">p/ entrega</div></div>
-      <div class="sc"><div class="sc-l">Entregues</div><div class="sc-v cb">${mp.filter(p=>p.status==='entregue').length}</div><div class="sc-sub">p/ pagamento</div></div>
-      <div class="sc"><div class="sc-l">Pagos</div><div class="sc-v cg">${mp.filter(p=>p.status==='pago').length}</div><div class="sc-sub">concluídos</div></div>`;
+      <div class="sc"><div class="sc-l">Aprovar</div><div class="sc-v ca">${sol}</div><div class="sc-sub">solicitaÃ§Ãµes</div></div>
+      <div class="sc"><div class="sc-l">Pendentes</div><div class="sc-v">${mp.filter(p=>['pedido','solicitado','entregue'].includes(p.status)&&!pedidoConcluido(p)).length}</div><div class="sc-sub">p/ entrega</div></div>
+      <div class="sc"><div class="sc-l">Entregues</div><div class="sc-v cb">${mp.filter(p=>qtdEntreguePedido(p)>0).length}</div><div class="sc-sub">p/ pagamento</div></div>
+      <div class="sc"><div class="sc-l">Pagos</div><div class="sc-v cg">${mp.filter(p=>qtdPagaPedido(p)>0).length}</div><div class="sc-sub">concluÃ­dos</div></div>`;
   } else {
     document.getElementById('stats-row').innerHTML=`
       <div class="sc"><div class="sc-l">Lancados</div><div class="sc-v">${mp.filter(p=>p.status==='solicitado').length}</div><div class="sc-sub">aguardando</div></div>
       <div class="sc"><div class="sc-l">Aprovados</div><div class="sc-v cb">${mp.filter(p=>['pedido','entregue','pago'].includes(p.status)).length}</div><div class="sc-sub">sem valores</div></div>
-      <div class="sc"><div class="sc-l">Aguardando</div><div class="sc-v ca">${mp.filter(p=>p.status==='solicitado').length}</div><div class="sc-sub">aprovação</div></div>
-      <div class="sc"><div class="sc-l">Entregues</div><div class="sc-v cb">${mp.filter(p=>p.status==='entregue').length}</div><div class="sc-sub">p/ pagar</div></div>`;
+      <div class="sc"><div class="sc-l">Aguardando</div><div class="sc-v ca">${mp.filter(p=>p.status==='solicitado').length}</div><div class="sc-sub">aprovaÃ§Ã£o</div></div>
+      <div class="sc"><div class="sc-l">Entregues</div><div class="sc-v cb">${mp.filter(p=>qtdEntreguePedido(p)>0).length}</div><div class="sc-sub">p/ pagar</div></div>`;
   }
 
-  let list=filtro==='fixos'?mp.filter(isPedidoFixo):mp.filter(p=>p.status!=='pago');
+  let list=filtro==='fixos'?mp.filter(isPedidoFixo):mp.filter(p=>!pedidoConcluido(p));
   if(filtroRev!=='todos')list=list.filter(p=>p.rev===filtroRev);
-  if(filtro==='pedido')list=list.filter(p=>['pedido','solicitado'].includes(p.status));
-  if(filtro==='entregue')list=list.filter(p=>p.status==='entregue');
+  if(filtro==='pedido')list=list.filter(p=>['pedido','solicitado','entregue'].includes(p.status)&&!pedidoConcluido(p));
+  if(filtro==='entregue')list=list.filter(p=>qtdEntreguePedido(p)>0&&!pedidoConcluido(p));
   if(filtro==='espera')list=list.filter(p=>p.status==='espera');
   list=filtro==='espera'
     ?list.slice().sort((a,b)=>String(a.data||'').localeCompare(String(b.data||''))||a.id-b.id)
@@ -956,16 +986,19 @@ function renderPedidos(){
   document.getElementById('pedidos-list').innerHTML=esperaInfo+list.map(p=>{
     const old=diffDays(p.data)>5;
     const loteTxt=pedidoLoteTexto(p);
+    const qtdPaga=qtdPagaPedido(p),qtdEnt=qtdEntreguePedido(p),qtdTotal=qtdPedido(p);
     return `<div class="pc" id="pc-${p.id}">
       <div class="pc-top" onclick="toggleCard(${p.id})">
         <div class="pc-stripe ${stripeC(p.status)}"></div>
         <div class="pc-main">
           <div class="pc-name">${p.cliente}</div>
-          <div class="pc-sub">${p.qtd} qtd · ${fmtFull(p.data)}${is_admin?' · '+revName(p.rev):''}</div>
+          <div class="pc-sub">${p.qtd} qtd Â· ${fmtFull(p.data)}${is_admin?' Â· '+revName(p.rev):''}</div>
         </div>
         <div class="pc-right">
           ${p.status==='espera'?`<span class="wait-qty small">${p.qtd} qtd</span>`:''}
-          ${pedidoPago(p)&&p.status!=='pago'?`<span class="sp sp-pag">Pago</span>`:''}
+          ${qtdEnt>0&&!pedidoEntregue(p)?`<span class="sp sp-ent">Ent ${qtdEnt}/${qtdTotal}</span>`:''}
+          ${qtdPaga>0&&!pedidoPago(p)?`<span class="sp sp-pag">Pago ${qtdPaga}/${qtdTotal}</span>`:''}
+          ${pedidoPago(p)&&!pedidoConcluido(p)?`<span class="sp sp-pag">Pago</span>`:''}
           ${is_admin?`<div class="pc-val">${R$(p.valor)}</div>`:`<span class="sp ${spClass(p.status)}">${spLabel(p.status)}</span>`}
           ${old?`<span class="pc-age">${diffDays(p.data)}d</span>`:`<i class="ti ti-chevron-down pc-chevron"></i>`}
         </div>
@@ -977,7 +1010,10 @@ function renderPedidos(){
           ${p.status==='espera'?`<div class="pd-item"><div class="pd-lbl">Lote esperado</div><div class="pd-val"><span class="wait-qty small">${p.qtd} qtd</span></div></div>`:''}
           ${is_admin?`<div class="pd-item"><div class="pd-lbl">Valor</div><div class="pd-val">${R$(p.valor)}${p.desconto?` <span style="font-size:11px;color:var(--t3)">(-${R$(p.desconto)})</span>`:''}</div></div>`:''}
           ${is_admin&&p.desconto?`<div class="pd-item"><div class="pd-lbl">Desconto</div><div class="pd-val">-${R$(p.desconto)}</div></div>`:''}
+          <div class="pd-item"><div class="pd-lbl">Entregue</div><div class="pd-val">${qtdEnt}/${qtdTotal} qtd</div></div>
+          <div class="pd-item"><div class="pd-lbl">Pago</div><div class="pd-val">${qtdPaga}/${qtdTotal} qtd</div></div>
           <div class="pd-item"><div class="pd-lbl">Pagamento</div><div class="pd-val"><span class="pp ${pgtoClass(p.pgto)}">${pgtoLabel(p.pgto)}</span></div></div>
+          ${p.dataPrevPagamento?`<div class="pd-item"><div class="pd-lbl">Prev. pagamento</div><div class="pd-val">${fmtFull(p.dataPrevPagamento)}</div></div>`:''}
           ${loteTxt?`<div class="pd-item"><div class="pd-lbl">Lote</div><div class="pd-val">${loteTxt}</div></div>`:`<div class="pd-item"><div class="pd-lbl">Data</div><div class="pd-val">${fmtFull(p.data)}</div></div>`}
           ${is_admin?`<div class="pd-item"><div class="pd-lbl">Revendedor</div><div class="pd-val">${revName(p.rev)}</div></div>`:''}
           ${loteTxt?`<div class="pd-item"><div class="pd-lbl">Data</div><div class="pd-val">${fmtFull(p.data)}</div></div>`:''}
@@ -986,8 +1022,8 @@ function renderPedidos(){
         ${is_admin&&p.status==='solicitado'?`<button class="pd-approve" onclick="aprovarPedido(${p.id})"><i class="ti ti-check"></i> Aprovar pedido</button>`:''}
         ${is_admin&&p.status==='espera'?`<button class="pd-approve" onclick="moverEsperaParaPedidos(${p.id})"><i class="ti ti-arrow-right"></i> Mover para pedidos</button>`:''}
         ${is_admin?`<div class="pd-acts">
-          ${p.status==='pedido'?`<button class="pd-act blue" onclick="setStatus(${p.id},'entregue')"><i class="ti ti-truck"></i>Entregue</button>`:''}
-          ${['pedido','entregue'].includes(p.status)&&!pedidoPago(p)?`<button class="pd-act green" onclick="setStatus(${p.id},'pago')"><i class="ti ti-coin"></i>Pago</button>`:''}
+          ${!pedidoEntregue(p)&&['pedido','entregue'].includes(p.status)?`<button class="pd-act blue" onclick="setStatus(${p.id},'entregue')"><i class="ti ti-truck"></i>Entregue</button>`:''}
+          ${!pedidoPago(p)&&['pedido','entregue'].includes(p.status)?`<button class="pd-act green" onclick="setStatus(${p.id},'pago')"><i class="ti ti-coin"></i>Pago</button>`:''}
           <button class="pd-act" onclick="openEdit(${p.id})"><i class="ti ti-pencil"></i>Editar</button>
           <button class="pd-act danger" onclick="excluir(${p.id})"><i class="ti ti-trash"></i>Excluir</button>
         </div>`:''}
@@ -1007,41 +1043,52 @@ function toggleCard(id){
 async function setStatus(id,s){
   const p=pedidos.find(x=>x.id===id);if(!p)return;
   if(curUser.role!=='admin'){toast('Somente o admin pode alterar status.');return}
+  if(remoteMode&&!orderPartialReady){toast('Execute a migracao de pagamento parcial no Supabase.');return}
+  const total=qtdPedido(p);
   if(s==='pago'){
+    const falta=total-qtdPagaPedido(p);
+    const qtd=parseInt(prompt(`Quantas unidades foram pagas?`,String(falta)))||0;
+    if(qtd<=0)return;
+    p.qtdPaga=Math.min(total,qtdPagaPedido(p)+qtd);
     p.dataPago=p.dataPago||today();
-    if(p.status==='entregue')p.status='pago';
   }else if(s==='entregue'){
-    p.status=pedidoPago(p)?'pago':'entregue';
+    const falta=total-qtdEntreguePedido(p);
+    const qtd=parseInt(prompt(`Quantas unidades foram entregues?`,String(falta)))||0;
+    if(qtd<=0)return;
+    p.qtdEntregue=Math.min(total,qtdEntreguePedido(p)+qtd);
   }
-  await save();renderPedidos();renderPagos();renderResumo();toast(s==='pago'?'✓ Marcado como pago':'✓ Marcado como entregue');
+  atualizarConclusao(p);
+  await save();renderPedidos();renderPagos();renderResumo();toast(s==='pago'?'âœ“ Marcado como pago':'âœ“ Marcado como entregue');
 }
 async function aprovarPedido(id){
   if(curUser.role!=='admin')return;
   const p=pedidos.find(x=>x.id===id);if(!p)return;
   const aloc=alocarLotes(p.qtd);
   if(!aloc){toast('Estoque insuficiente nos lotes cadastrados.');return}
-  if(remoteMode&&aloc.length>1&&!lotesJsonReady){toast('Execute a migração de divisão por lote no Supabase.');return}
+  if(remoteMode&&aloc.length>1&&!lotesJsonReady){toast('Execute a migraÃ§Ã£o de divisÃ£o por lote no Supabase.');return}
   if(aloc.length>1&&!confirm(`Esse pedido excede o lote atual. Usar ${aloc.map(a=>`${a.qtd} qtd do ${loteNome(lotes.find(l=>l.id===a.id))}`).join(' + ')}?`))return;
   p.loteId=aloc[0].id;p.lotesUsados=aloc;p.status='pedido';
   criarProximoProgramadoDoPedido(p);
-  await save();renderPedidos();toast('✓ Pedido aprovado!');
+  await save();renderPedidos();toast('âœ“ Pedido aprovado!');
 }
 async function moverEsperaParaPedidos(id){
   const p=pedidos.find(x=>x.id===id);if(!p)return;
   const aloc=alocarLotes(p.qtd);
-  if(!aloc){toast('Ainda não há estoque suficiente.');return}
-  if(remoteMode&&aloc.length>1&&!lotesJsonReady){toast('Execute a migração de divisão por lote no Supabase.');return}
+  if(!aloc){toast('Ainda nÃ£o hÃ¡ estoque suficiente.');return}
+  if(remoteMode&&aloc.length>1&&!lotesJsonReady){toast('Execute a migraÃ§Ã£o de divisÃ£o por lote no Supabase.');return}
   p.loteId=aloc[0].id;p.lotesUsados=aloc;p.status='pedido';
   criarProximoProgramadoDoPedido(p);
   await save();renderPedidos();renderHistorico();toast('Pedido movido para pedidos.');
 }
 
-// ── MODAL PEDIDO ──
+// â”€â”€ MODAL PEDIDO â”€â”€
 function calcTotal(){
   const q=parseInt(document.getElementById('m-qtd').value)||0;
   const d=parseFloat(document.getElementById('m-desc').value)||0;
   const pgto=document.getElementById('m-pgto')?.value;
   const entrega=document.getElementById('m-entrega')?.checked?TAXA_ENTREGA:0;
+  const prev=document.getElementById('m-prev-pgto-f');
+  if(prev)prev.style.display=pgto==='fiado'?'':'none';
   document.getElementById('m-total').textContent=pgto==='doacao'?R$(0):R$(Math.max(0,q*PRECO-d)+entrega);
 }
 function calcTotalEdit(){
@@ -1059,16 +1106,21 @@ function togglePedidoProgramado(){
   document.getElementById('m-weekday-field').style.display=tipo==='programado'&&freq==='semanal'?'':'none';
   document.getElementById('m-monthday-field').style.display=tipo==='programado'&&freq==='mensal'?'':'none';
   document.getElementById('m-start-field').style.display=tipo==='programado'&&freq==='quinzenal'?'':'none';
+  const lf=document.getElementById('m-lote-f');if(lf)lf.style.display=curUser?.role==='admin'&&tipo!=='programado'?'':'none';
 }
 function openModalPedido(tipoInicial='avulso'){
   const revs=users.filter(u=>u.role==='rev');
   document.getElementById('m-rev').innerHTML=revs.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
   document.getElementById('m-rev-f').style.display=curUser.role==='admin'&&revs.length?'':'none';
+  const loteSel=document.getElementById('m-lote');
+  if(loteSel)loteSel.innerHTML='<option value="">Automatico</option>'+lotesComEstoque().map(l=>`<option value="${l.id}">${loteNome(l)} (${loteRest(l)} restantes)</option>`).join('');
+  document.getElementById('m-lote-f').style.display=curUser.role==='admin'&&tipoInicial!=='programado'?'':'none';
   document.getElementById('mo-ped-title').textContent=tipoInicial==='programado'?'Novo programado':'Novo pedido';
   document.getElementById('m-prog-id').value='';
   ['m-nome','m-obs'].forEach(id=>document.getElementById(id).value='');
   ['m-qtd','m-desc'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('m-pgto').value='pix';
+  document.getElementById('m-prev-pgto').value='';
   document.getElementById('m-entrega').checked=false;
   document.getElementById('m-espera').checked=false;
   document.getElementById('m-tipo').value=tipoInicial;
@@ -1077,6 +1129,7 @@ function openModalPedido(tipoInicial='avulso'){
   document.getElementById('m-monthday').value=String(new Date().getDate());
   document.getElementById('m-start').value=today();
   togglePedidoProgramado();
+  calcTotal();
   document.getElementById('m-total').textContent='R$ 0,00';
   document.getElementById('mo-pedido').classList.add('open');
 }
@@ -1092,10 +1145,12 @@ async function salvarPedido(){
   const descontoFinal=pgto==='doacao'?qtd*PRECO:desc;
   const obs=document.getElementById('m-obs').value.trim();
   const rev=curUser.role==='rev'?curUser.id:(document.getElementById('m-rev').value||curUser.id);
-  if(!nome||qtd<=0){toast('⚠ Preencha nome e quantidade');return}
+  const dataPrevPagamento=pgto==='fiado'?(document.getElementById('m-prev-pgto').value||null):null;
+  if(!nome||qtd<=0){toast('âš  Preencha nome e quantidade');return}
+  if(remoteMode&&!orderPartialReady&&document.getElementById('m-tipo').value!=='programado'){toast('Execute a migracao de pagamento parcial no Supabase.');return}
   if(document.getElementById('m-tipo').value==='programado'){
-    if(remoteMode&&!recurringReady){toast('Execute a migração de pedidos programados no Supabase.');return}
-    if(remoteMode&&!recurringExtraReady&&(taxaEntrega>0||document.getElementById('m-freq').value==='quinzenal')){toast('Execute a migração nova no Supabase.');return}
+    if(remoteMode&&!recurringReady){toast('Execute a migraÃ§Ã£o de pedidos programados no Supabase.');return}
+    if(remoteMode&&!recurringExtraReady&&(taxaEntrega>0||document.getElementById('m-freq').value==='quinzenal')){toast('Execute a migraÃ§Ã£o nova no Supabase.');return}
     const progId=parseInt(document.getElementById('m-prog-id').value)||null;
     const freq=document.getElementById('m-freq').value;
     const diaSemana=freq==='semanal'?parseInt(document.getElementById('m-weekday').value):null;
@@ -1112,21 +1167,22 @@ async function salvarPedido(){
     return;
   }
   if(listaEspera){
-    if(remoteMode&&!lotesJsonReady){toast('Execute a migração nova no Supabase.');return}
-    pedidos.push({id:nextId++,cliente:nome,qtd,valor:val,desconto:descontoFinal,taxaEntrega,status:'espera',rev,data:today(),pgto,obs,loteId:null,lotesUsados:null});
+    if(remoteMode&&!lotesJsonReady){toast('Execute a migraÃ§Ã£o nova no Supabase.');return}
+    pedidos.push({id:nextId++,cliente:nome,qtd,valor:val,desconto:descontoFinal,taxaEntrega,status:'espera',rev,data:today(),pgto,obs,loteId:null,lotesUsados:null,qtdPaga:0,qtdEntregue:0,dataPrevPagamento});
     await save();closeModal('mo-pedido');renderPedidos();toast('Pedido enviado para lista de espera!');
     return;
   }
   if(!la){toast('Cadastre um lote antes de criar pedido avulso.');return}
-  const aloc=curUser.role==='admin'?alocarLotes(qtd):null;
+  const loteEscolhido=document.getElementById('m-lote')?.value||'';
+  const aloc=curUser.role==='admin'?(loteEscolhido?alocarLoteSelecionado(qtd,loteEscolhido):alocarLotes(qtd)):null;
   if(curUser.role==='admin'&&!aloc){toast('Estoque insuficiente nos lotes cadastrados.');return}
-  if(remoteMode&&taxaEntrega>0&&!lotesJsonReady){toast('Execute a migração nova no Supabase.');return}
-  if(curUser.role==='admin'&&remoteMode&&aloc.length>1&&!lotesJsonReady){toast('Execute a migração de divisão por lote no Supabase.');return}
-  pedidos.push({id:nextId++,cliente:nome,qtd,valor:val,desconto:descontoFinal,taxaEntrega,status:curUser.role==='admin'?'pedido':'solicitado',rev,data:today(),pgto,obs,loteId:curUser.role==='admin'?aloc[0].id:null,lotesUsados:curUser.role==='admin'?aloc:null});
+  if(remoteMode&&taxaEntrega>0&&!lotesJsonReady){toast('Execute a migraÃ§Ã£o nova no Supabase.');return}
+  if(curUser.role==='admin'&&remoteMode&&aloc.length>1&&!lotesJsonReady){toast('Execute a migraÃ§Ã£o de divisÃ£o por lote no Supabase.');return}
+  pedidos.push({id:nextId++,cliente:nome,qtd,valor:val,desconto:descontoFinal,taxaEntrega,status:curUser.role==='admin'?'pedido':'solicitado',rev,data:today(),pgto,obs,loteId:curUser.role==='admin'?aloc[0].id:null,lotesUsados:curUser.role==='admin'?aloc:null,qtdPaga:0,qtdEntregue:0,dataPrevPagamento});
   await save();closeModal('mo-pedido');renderPedidos();toast('Pedido feito!');
 }
 
-// ── EDITAR / EXCLUIR ──
+// â”€â”€ EDITAR / EXCLUIR â”€â”€
 function openEdit(id){
   const p=pedidos.find(x=>x.id===id);if(!p)return;
   document.getElementById('e-id').value=id;
@@ -1140,6 +1196,9 @@ function openEdit(id){
   document.getElementById('e-entrega').checked=Boolean(p.taxaEntrega);
   document.getElementById('e-pago').checked=pedidoPago(p);
   document.getElementById('e-data-pago').value=p.dataPago||today();
+  document.getElementById('e-qtd-paga').value=qtdPagaPedido(p);
+  document.getElementById('e-qtd-entregue').value=qtdEntreguePedido(p);
+  document.getElementById('e-data-prev-pagamento').value=p.dataPrevPagamento||'';
   document.getElementById('e-rev').innerHTML=users.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
   document.getElementById('e-rev').value=p.rev;
   document.getElementById('e-lote').innerHTML='<option value="">Sem lote</option>'+lotes.map(l=>`<option value="${l.id}">${loteNome(l)} (${loteRest(l)} restantes)</option>`).join('');
@@ -1155,7 +1214,8 @@ async function salvarEdicao(){
   const qtd=parseInt(document.getElementById('e-qtd').value)||0;
   const val=parseFloat(document.getElementById('e-val').value)||0;
   p.pgto=document.getElementById('e-pgto').value;
-  if(!nome||qtd<=0||(p.pgto!=='doacao'&&val<=0)){toast('⚠ Preencha todos os campos');return}
+  if(!nome||qtd<=0||(p.pgto!=='doacao'&&val<=0)){toast('âš  Preencha todos os campos');return}
+  if(remoteMode&&!orderPartialReady){toast('Execute a migracao de pagamento parcial no Supabase.');return}
   p.cliente=nome;p.qtd=qtd;
   p.data=document.getElementById('e-data').value||today();
   p.status=document.getElementById('e-status').value;
@@ -1165,10 +1225,16 @@ async function salvarEdicao(){
   p.rev=document.getElementById('e-rev').value||p.rev;
   const loteId=document.getElementById('e-lote').value;
   p.loteId=loteId?Number(loteId):null;p.lotesUsados=null;
-  p.dataPago=document.getElementById('e-pago').checked?(document.getElementById('e-data-pago').value||today()):null;
-  if(p.status==='pago'&&!p.dataPago)p.dataPago=today();
+  p.qtdPaga=Math.min(qtd,Math.max(0,parseInt(document.getElementById('e-qtd-paga').value)||0));
+  p.qtdEntregue=Math.min(qtd,Math.max(0,parseInt(document.getElementById('e-qtd-entregue').value)||0));
+  if(document.getElementById('e-pago').checked&&p.qtdPaga<qtd)p.qtdPaga=qtd;
+  p.dataPago=p.qtdPaga>0?(document.getElementById('e-data-pago').value||today()):null;
+  p.dataPrevPagamento=document.getElementById('e-data-prev-pagamento').value||null;
+  if(p.status==='entregue'&&p.qtdEntregue<qtd)p.qtdEntregue=qtd;
+  if(p.status==='pago'){p.qtdPaga=qtd;p.qtdEntregue=qtd;p.dataPago=p.dataPago||today()}
   if(p.pgto==='doacao'){p.desconto=qtd*PRECO;p.valor=0}
   p.obs=document.getElementById('e-obs').value.trim();
+  atualizarConclusao(p);
   await save();closeModal('mo-edit');renderPedidos();renderPagos();renderResumo();toast('Atualizado!');
 }
 async function excluir(id){
@@ -1177,17 +1243,29 @@ async function excluir(id){
 }
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 
-// ── PAGOS ──
+// â”€â”€ PAGOS â”€â”€
+function setFiltroPagosRev(v){filtroPagosRev=v;renderPagos()}
 function renderPagos(){
   const is_admin=curUser?.role==='admin';
-  const list=pedidos.filter(pedidoPago).slice().reverse();
+  const revSelect=document.getElementById('pagos-rev');
+  if(revSelect){
+    const base=pedidos.filter(p=>qtdPagaPedido(p)>0);
+    const vendedores=vendedoresDoFiltro(base);
+    revSelect.innerHTML=`<option value="todos">Todos os vendedores</option>`+vendedores.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
+    revSelect.value=vendedores.some(u=>u.id===filtroPagosRev)?filtroPagosRev:'todos';
+    filtroPagosRev=revSelect.value;
+  }
+  let list=pedidos.filter(p=>qtdPagaPedido(p)>0);
+  if(filtroPagosRev!=='todos')list=list.filter(p=>p.rev===filtroPagosRev);
+  list=list.slice().reverse();
   if(!list.length){document.getElementById('pagos-list').innerHTML='<div class="empty"><i class="ti ti-coin-off"></i><span>Nenhum pagamento ainda</span></div>';return}
-  const total=list.reduce((s,p)=>s+p.valor,0);
-  let html=`<div class="stats" style="margin-bottom:14px"><div class="sc" style="grid-column:span 2"><div class="sc-l">Total recebido</div><div class="sc-v cg">${R$(total)}</div><div class="sc-sub">${list.length} pedidos pagos</div></div></div>`;
+  const total=list.reduce((s,p)=>s+valorPagoPedido(p),0);
+  let html=`<div class="stats" style="margin-bottom:14px"><div class="sc" style="grid-column:span 2"><div class="sc-l">Total recebido</div><div class="sc-v cg">${R$(total)}</div><div class="sc-sub">${list.length} pedidos com pagamento</div></div></div>`;
   let lastD='';
   list.forEach(p=>{
-    if(p.dataPago!==lastD){html+=`<div class="slabel">${fmtFull(p.dataPago)}</div>`;lastD=p.dataPago}
-    html+=`<div class="pago-card"><div class="pago-dot"></div><div class="pago-body"><div class="pago-nome">${p.cliente}</div><div class="pago-meta">${p.qtd} qtd · <span class="pp ${pgtoClass(p.pgto)}">${pgtoLabel(p.pgto)}</span> · ${revName(p.rev)}${p.obs?` · <em>${p.obs}</em>`:''}</div></div><div class="pago-val">${R$(p.valor)}</div>${is_admin?`<button class="del-btn" onclick="excluir(${p.id})" title="Excluir pedido"><i class="ti ti-trash" style="font-size:15px"></i></button>`:''}</div>`;
+    const data=p.dataPago||today();
+    if(data!==lastD){html+=`<div class="slabel">${fmtFull(data)}</div>`;lastD=data}
+    html+=`<div class="pago-card"><div class="pago-dot"></div><div class="pago-body"><div class="pago-nome">${p.cliente}</div><div class="pago-meta">${qtdPagaPedido(p)}/${p.qtd} pago Â· ${qtdEntreguePedido(p)}/${p.qtd} entregue Â· <span class="pp ${pgtoClass(p.pgto)}">${pgtoLabel(p.pgto)}</span> Â· ${revName(p.rev)}${p.obs?` Â· <em>${p.obs}</em>`:''}</div></div><div class="pago-val">${R$(p.valor)}</div>${is_admin?`<button class="del-btn" onclick="excluir(${p.id})" title="Excluir pedido"><i class="ti ti-trash" style="font-size:15px"></i></button>`:''}</div>`;
   });
   document.getElementById('pagos-list').innerHTML=html;
   if(is_admin)[...document.querySelectorAll('#pagos-list .pago-card')].forEach((card,i)=>{
@@ -1197,17 +1275,17 @@ function renderPagos(){
   });
 }
 
-// ── RESUMO ──
+// â”€â”€ RESUMO â”€â”€
 function setPeriodo(p,el){periodo=p;document.querySelectorAll('.ptab').forEach(x=>x.classList.remove('on'));el.classList.add('on');renderResumo()}
 function renderResumo(){
-  const pLabel={semana:'últimos 7 dias',mes:'este mês',ano:'este ano'};
+  const pLabel={semana:'Ãºltimos 7 dias',mes:'este mÃªs',ano:'este ano'};
   const allF=filterByPeriod(pedidos,'data');
-  const pgF=filterByPeriod(pedidos.filter(pedidoPago),'dataPago');
+  const pgF=filterByPeriod(pedidos.filter(p=>qtdPagaPedido(p)>0),'dataPago');
   const total=allF.reduce((s,p)=>s+p.valor,0);
   const totQtd=allF.reduce((s,p)=>s+p.qtd,0);
   const lotesCount=new Set(allF.flatMap(p=>Array.isArray(p.lotesUsados)&&p.lotesUsados.length?p.lotesUsados.map(a=>a.id):[p.loteId]).filter(Boolean)).size;
   const vendedoresCount=new Set(allF.map(p=>p.rev)).size;
-  let html=`<div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Período: ${pLabel[periodo]}</div>`;
+  let html=`<div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">PerÃ­odo: ${pLabel[periodo]}</div>`;
   html+=`<div class="stats">
     <div class="sc" onclick="abrirDetalhe('geral')" style="cursor:pointer"><div class="sc-l">Valor total</div><div class="sc-v">${R$(total)}</div><div class="sc-sub">toque p/ detalhar</div></div>
     <div class="sc" onclick="abrirDetalhe('geral')" style="cursor:pointer"><div class="sc-l">Quantidade</div><div class="sc-v">${totQtd} qtd</div><div class="sc-sub">${allF.length} pedidos</div></div>
@@ -1216,22 +1294,22 @@ function renderResumo(){
   </div>`;
   const revData=vendedoresDoFiltro(allF).map(r=>{
     const ra=allF.filter(p=>p.rev===r.id);const rp=pgF.filter(p=>p.rev===r.id);
-    return{id:r.id,name:r.name,tot:ra.reduce((s,p)=>s+p.valor,0),pg:rp.reduce((s,p)=>s+p.valor,0),qtd:ra.reduce((s,p)=>s+p.qtd,0),c:ra.length};
+    return{id:r.id,name:r.name,tot:ra.reduce((s,p)=>s+p.valor,0),pg:rp.reduce((s,p)=>s+valorPagoPedido(p),0),qtd:ra.reduce((s,p)=>s+p.qtd,0),c:ra.length};
   }).filter(r=>r.c>0);
-  html+=`<div class="slabel">Resumo rápido</div>`;
-  html+=`<div class="rev-card" onclick="abrirDetalhe('lotes')"><div class="rc-head"><div class="rc-name">Por lote</div><div class="rc-count">Toque para detalhar</div></div><div class="pago-meta">${lotesCount} lote${lotesCount!==1?'s':''} usados · ${totQtd} qtd vendidas</div></div>`;
+  html+=`<div class="slabel">Resumo rÃ¡pido</div>`;
+  html+=`<div class="rev-card" onclick="abrirDetalhe('lotes')"><div class="rc-head"><div class="rc-name">Por lote</div><div class="rc-count">Toque para detalhar</div></div><div class="pago-meta">${lotesCount} lote${lotesCount!==1?'s':''} usados Â· ${totQtd} qtd vendidas</div></div>`;
   if(revData.length){
-    html+=`<div class="rev-card" onclick="abrirDetalhe('vendedores')"><div class="rc-head"><div class="rc-name">Por vendedor e lote</div><div class="rc-count">Toque para detalhar</div></div><div class="pago-meta">${vendedoresCount} vendedor${vendedoresCount!==1?'es':''} · ${allF.length} pedidos</div></div>`;
+    html+=`<div class="rev-card" onclick="abrirDetalhe('vendedores')"><div class="rc-head"><div class="rc-name">Por vendedor e lote</div><div class="rc-count">Toque para detalhar</div></div><div class="pago-meta">${vendedoresCount} vendedor${vendedoresCount!==1?'es':''} Â· ${allF.length} pedidos</div></div>`;
   }
   document.getElementById('resumo-content').innerHTML=html;
 }
 function abrirDetalhe(tipo){
-  const allF=filterByPeriod(pedidos,'data');const pgF=filterByPeriod(pedidos.filter(pedidoPago),'dataPago');
+  const allF=filterByPeriod(pedidos,'data');const pgF=filterByPeriod(pedidos.filter(p=>qtdPagaPedido(p)>0),'dataPago');
   let html='';
   if(tipo==='geral'){
     document.getElementById('det-title').textContent='Resumo detalhado';
-    const recebido=pgF.reduce((s,p)=>s+p.valor,0);
-    const pendente=allF.filter(p=>p.status!=='pago').reduce((s,p)=>s+p.valor,0);
+    const recebido=pgF.reduce((s,p)=>s+valorPagoPedido(p),0);
+    const pendente=allF.filter(p=>!pedidoConcluido(p)).reduce((s,p)=>s+Math.max(0,(Number(p.valor)||0)-valorPagoPedido(p)),0);
     html=`<div class="det-row"><span>Valor total</span><strong>${R$(allF.reduce((s,p)=>s+p.valor,0))}</strong></div>
       <div class="det-row"><span>Recebido</span><strong>${R$(recebido)}</strong></div>
       <div class="det-row"><span>Pendente</span><strong>${R$(pendente)}</strong></div>
@@ -1257,21 +1335,21 @@ function abrirDetalhe(tipo){
     vendedoresDoFiltro(allF).forEach(r=>{
       const vp=allF.filter(p=>p.rev===r.id);if(!vp.length)return;
       html+=`<div class="det-sub">${r.name}</div>
-        <div class="det-row"><span>Total vendido</span><strong>${vp.reduce((s,p)=>s+p.qtd,0)} qtd · ${R$(vp.reduce((s,p)=>s+p.valor,0))}</strong></div>`;
+        <div class="det-row"><span>Total vendido</span><strong>${vp.reduce((s,p)=>s+p.qtd,0)} qtd Â· ${R$(vp.reduce((s,p)=>s+p.valor,0))}</strong></div>`;
       lotes.slice().reverse().forEach(l=>{
         const items=vp.filter(p=>pedidoQtdNoLote(p,l.id)>0);if(!items.length)return;
         const qtdLote=items.reduce((s,p)=>s+pedidoQtdNoLote(p,l.id),0);
         const valorLote=items.reduce((s,p)=>s+(p.qtd? p.valor*(pedidoQtdNoLote(p,l.id)/p.qtd):0),0);
-        html+=`<div class="det-row"><span>${loteNome(l)} · ${items.length} pedido${items.length!==1?'s':''}</span><strong>${qtdLote} qtd · ${R$(valorLote)}</strong></div>`;
+        html+=`<div class="det-row"><span>${loteNome(l)} Â· ${items.length} pedido${items.length!==1?'s':''}</span><strong>${qtdLote} qtd Â· ${R$(valorLote)}</strong></div>`;
       });
     });
   }
-  if(!html)html='<div class="empty" style="padding:1.5rem"><i class="ti ti-chart-bar-off"></i><span>Nenhum dado nesse período</span></div>';
+  if(!html)html='<div class="empty" style="padding:1.5rem"><i class="ti ti-chart-bar-off"></i><span>Nenhum dado nesse perÃ­odo</span></div>';
   document.getElementById('det-body').innerHTML=html;
   document.getElementById('mo-det').classList.add('open');
 }
 
-// ── HISTÓRICO ──
+// â”€â”€ HISTÃ“RICO â”€â”€
 function renderHistorico(){
   const progEl=document.getElementById('programados-tab-list');
   if(progEl){progEl.innerHTML=htmlProgramacoes(true);return}
@@ -1291,8 +1369,8 @@ function renderHistorico(){
       html+=`<div class="pago-card" style="border-color:var(--br)">
         <div class="pago-dot" style="background:${p.status==='pago'?'var(--g)':p.status==='entregue'?'var(--b)':'#FCD34D'}"></div>
         <div class="pago-body">
-          <div class="pago-nome">${fmtFull(p.data)} · <span class="sp ${spClass(p.status)}">${spLabel(p.status)}</span></div>
-          <div class="pago-meta">${p.qtd} qtd · ${pgtoLabel(p.pgto)} · ${revName(p.rev)}${p.obs?` · ${p.obs}`:''}</div>
+          <div class="pago-nome">${fmtFull(p.data)} Â· <span class="sp ${spClass(p.status)}">${spLabel(p.status)}</span></div>
+          <div class="pago-meta">${p.qtd} qtd Â· ${pgtoLabel(p.pgto)} Â· ${revName(p.rev)}${p.obs?` Â· ${p.obs}`:''}</div>
         </div>
         <div class="pago-val">${R$(p.valor)}</div>
       </div>`;
@@ -1302,13 +1380,13 @@ function renderHistorico(){
 }
 function verCliente(n){histCliente=n;document.getElementById('hist-input').value=n;renderHistorico()}
 
-// ── CONFIG ──
+// â”€â”€ CONFIG â”€â”€
 function htmlProgramacoes(){
   if(!programacoes.length)return '<div class="empty" style="padding:1.5rem"><i class="ti ti-calendar-off"></i><span>Nenhum pedido programado</span></div>';
   return programacoes.slice().reverse().map(p=>{
     const prox=proximaDataProgramada(p);
     const espera=pedidos.filter(o=>String(o.obs||'').includes(`Programado #${p.id}`)&&o.status==='espera').length;
-    return `<div class="user-item"><div class="u-left"><div class="u-av">${ini(p.cliente)}</div><div><div class="u-name">${p.cliente}</div><div class="u-meta">${p.qtd} qtd · ${freqLabel(p)} · ${revName(p.rev)}${prox?` · Próx. ${fmtFull(prox)}`:''}${espera?` · ${espera} em espera`:''}</div></div></div><div class="user-actions"><button class="role-btn admin" onclick="openProgramacao(${p.id})">Editar</button><button class="del-btn" onclick="excluirProgramacao(${p.id})"><i class="ti ti-trash" style="font-size:15px"></i></button></div></div>`;
+    return `<div class="user-item"><div class="u-left"><div class="u-av">${ini(p.cliente)}</div><div><div class="u-name">${p.cliente}</div><div class="u-meta">${p.qtd} qtd Â· ${freqLabel(p)} Â· ${revName(p.rev)}${prox?` Â· PrÃ³x. ${fmtFull(prox)}`:''}${espera?` Â· ${espera} em espera`:''}</div></div></div><div class="user-actions"><button class="role-btn admin" onclick="openProgramacao(${p.id})">Editar</button><button class="del-btn" onclick="excluirProgramacao(${p.id})"><i class="ti ti-trash" style="font-size:15px"></i></button></div></div>`;
   }).join('');
 }
 function openProgramacao(id){
@@ -1337,7 +1415,7 @@ function abrirClientesPopup(cliente=null){
     const list=pedidos.filter(p=>p.cliente.toLowerCase()===n.toLowerCase()).slice().reverse();
     const total=list.reduce((s,p)=>s+p.valor,0);
     html+=`<div class="det-sub">${n}</div><div class="det-row"><span>Pedidos</span><strong>${list.length}</strong></div><div class="det-row"><span>Total</span><strong>${R$(total)}</strong></div>`;
-    list.slice(0,8).forEach(p=>html+=`<div class="pago-meta">${fmtFull(p.data)} · ${p.qtd} qtd · ${spLabel(p.status)} · ${revName(p.rev)}</div>`);
+    list.slice(0,8).forEach(p=>html+=`<div class="pago-meta">${fmtFull(p.data)} Â· ${p.qtd} qtd Â· ${spLabel(p.status)} Â· ${revName(p.rev)}</div>`);
   });
   if(!html)html='<div class="empty" style="padding:1.5rem"><i class="ti ti-users-off"></i><span>Nenhum cliente ainda</span></div>';
   document.getElementById('det-body').innerHTML=html;
@@ -1352,13 +1430,13 @@ function renderConfig(){
     lh+=`<div class="lote-strip" style="margin-bottom:8px;flex-direction:column;align-items:stretch;gap:8px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div><div class="ls-label">${loteNome(l)} ${pendente?'<span class="sp sp-sol">Pendente</span>':''}</div><div style="font-size:12px;color:var(--t3);margin-top:2px">${l.obs||''}</div></div>
-        <span style="font-size:13px;font-weight:700;color:${pendente?'var(--yd)':r>0?'var(--gd)':'var(--t3)'}">${pendente?'Aguardando aprovação':`${r} restantes`}</span>
+        <span style="font-size:13px;font-weight:700;color:${pendente?'var(--yd)':r>0?'var(--gd)':'var(--t3)'}">${pendente?'Aguardando aprovaÃ§Ã£o':`${r} restantes`}</span>
       </div>
       <div class="ls-bar-wrap"><div class="ls-bar" style="flex:1"><div class="ls-fill" style="width:${pct}%"></div></div><span class="ls-qty">${l.qtd-r}/${l.qtd} usados</span></div>
       <div class="lote-actions">
         ${pendente?`<button class="pd-approve" onclick="aprovarLote(${l.id})"><i class="ti ti-check"></i> Aprovar estoque</button>`:''}
         <button class="edit" onclick="openModalLote(${l.id})"><i class="ti ti-pencil" style="font-size:13px"></i> Editar</button>
-        <button class="danger" onclick="excluirLote(${l.id})" ${usado>0?'title="Lote com pedidos não pode ser excluído"':''}><i class="ti ti-trash" style="font-size:13px"></i> Excluir</button>
+        <button class="danger" onclick="excluirLote(${l.id})" ${usado>0?'title="Lote com pedidos nÃ£o pode ser excluÃ­do"':''}><i class="ti ti-trash" style="font-size:13px"></i> Excluir</button>
       </div>
     </div>`;
   });
@@ -1369,25 +1447,25 @@ function renderConfig(){
   let uh='';
   admins.forEach(u=>{
     const canDemote=admins.length>1&&u.id!==curUser.id;
-    uh+=`<div class="user-item" style="margin-bottom:8px"><div class="u-left"><div class="u-av adm">${ini(u.name)}</div><div><div class="u-name">${u.name}</div><div class="u-meta">@${u.username} · Admin</div></div></div><div class="user-actions">${canDemote?`<button class="role-btn rev" onclick="setUserRole('${u.id}','rev')">Virar revendedor</button>`:''}</div></div>`;
+    uh+=`<div class="user-item" style="margin-bottom:8px"><div class="u-left"><div class="u-av adm">${ini(u.name)}</div><div><div class="u-name">${u.name}</div><div class="u-meta">@${u.username} Â· Admin</div></div></div><div class="user-actions">${canDemote?`<button class="role-btn rev" onclick="setUserRole('${u.id}','rev')">Virar revendedor</button>`:''}</div></div>`;
   });
   if(!revs.length)uh+=`<div class="empty" style="padding:1.5rem"><i class="ti ti-user-off"></i><span>Nenhum revendedor ainda</span></div>`;
-  revs.forEach(u=>uh+=`<div class="user-item"><div class="u-left"><div class="u-av">${ini(u.name)}</div><div><div class="u-name">${u.name}</div><div class="u-meta">@${u.username} · Revendedor · ${pedidos.filter(p=>p.rev===u.id).length} pedidos</div></div></div><div class="user-actions"><button class="role-btn admin" onclick="setUserRole('${u.id}','admin')">Tornar admin</button><button class="del-btn" onclick="delUser('${u.id}')"><i class="ti ti-trash" style="font-size:15px"></i></button></div></div>`);
+  revs.forEach(u=>uh+=`<div class="user-item"><div class="u-left"><div class="u-av">${ini(u.name)}</div><div><div class="u-name">${u.name}</div><div class="u-meta">@${u.username} Â· Revendedor Â· ${pedidos.filter(p=>p.rev===u.id).length} pedidos</div></div></div><div class="user-actions"><button class="role-btn admin" onclick="setUserRole('${u.id}','admin')">Tornar admin</button><button class="del-btn" onclick="delUser('${u.id}')"><i class="ti ti-trash" style="font-size:15px"></i></button></div></div>`);
   document.getElementById('users-list').innerHTML=uh;
 }
 async function addUser(){
   const nome=document.getElementById('u-nome').value.trim();
   const u=document.getElementById('u-user').value.trim().toLowerCase();
   const p=document.getElementById('u-pass').value;
-  if(!nome||!u||p.length<4){toast('⚠ Preencha tudo (senha mín. 4)');return}
-  if(users.find(x=>x.username.toLowerCase()===u)){toast('⚠ Usuário já existe');return}
-  if(users.filter(x=>x.role==='rev').length>=5){toast('⚠ Limite atingido');return}
+  if(!nome||!u||p.length<4){toast('âš  Preencha tudo (senha mÃ­n. 4)');return}
+  if(users.find(x=>x.username.toLowerCase()===u)){toast('âš  UsuÃ¡rio jÃ¡ existe');return}
+  if(users.filter(x=>x.role==='rev').length>=5){toast('âš  Limite atingido');return}
   users.push({id:u,name:nome,username:u,pass:p,passHash:await hashPass(p),role:'rev'});await save();
   ['u-nome','u-user','u-pass'].forEach(id=>document.getElementById(id).value='');
-  renderConfig();toast(`✓ ${nome} adicionado!`);
+  renderConfig();toast(`âœ“ ${nome} adicionado!`);
 }
 async function delUser(id){
-  if(pedidos.some(p=>p.rev===id)){toast('Esse revendedor tem pedidos. Altere para admin/revendedor, mas não remova.');return}
+  if(pedidos.some(p=>p.rev===id)){toast('Esse revendedor tem pedidos. Altere para admin/revendedor, mas nÃ£o remova.');return}
   if(!confirm('Remover este revendedor?'))return;
   users=users.filter(u=>u.id!==id);await deleteRemote('app_users',id);await save();renderConfig();toast('Removido');
 }
@@ -1401,13 +1479,13 @@ async function setUserRole(id,role){
 }
 async function excluirProgramacao(id){
   const p=programacoes.find(x=>x.id===id);if(!p)return;
-  if(!confirm(`Excluir programação de ${p.cliente}?`))return;
+  if(!confirm(`Excluir programaÃ§Ã£o de ${p.cliente}?`))return;
   programacoes=programacoes.filter(x=>x.id!==id);
   await deleteRemote('recurring_orders',id);
-  await save();renderConfig();toast('Programação excluída.');
+  await save();renderConfig();toast('ProgramaÃ§Ã£o excluÃ­da.');
 }
 
-// ── LOTES ──
+// â”€â”€ LOTES â”€â”€
 function openModalLote(id=null){
   const lote=id?lotes.find(l=>l.id===id):null;
   document.getElementById('lote-modal-title').textContent=lote?'Editar lote':'Cadastrar lote';
@@ -1425,17 +1503,17 @@ async function salvarLote(){
   if(qtd<=0){toast('Informe a quantidade.');return}
   const obs=document.getElementById('lote-obs').value.trim();
   const status=document.getElementById('lote-pendente').checked?'pendente':'ativo';
-  if(remoteMode&&status==='pendente'&&!lotsStatusReady){toast('Execute a migração nova no Supabase.');return}
+  if(remoteMode&&status==='pendente'&&!lotsStatusReady){toast('Execute a migraÃ§Ã£o nova no Supabase.');return}
   if(id){
     const lote=lotes.find(l=>l.id===id);if(!lote)return;
     const usado=loteUsado(id);
-    if(qtd<usado){toast(`Este lote já tem ${usado} usado. A quantidade não pode ser menor.`);return}
+    if(qtd<usado){toast(`Este lote jÃ¡ tem ${usado} usado. A quantidade nÃ£o pode ser menor.`);return}
     lote.data=data;lote.qtd=qtd;lote.obs=obs;lote.status=status;
-    await save();closeModal('mo-lote');renderConfig();renderPedidos();toast('✓ Lote atualizado!');
+    await save();closeModal('mo-lote');renderConfig();renderPedidos();toast('âœ“ Lote atualizado!');
     return;
   }
   lotes.push({id:nextLoteId++,data,qtd,obs,status});
-  await save();closeModal('mo-lote');renderConfig();renderPedidos();toast('✓ Lote cadastrado!');
+  await save();closeModal('mo-lote');renderConfig();renderPedidos();toast('âœ“ Lote cadastrado!');
 }
 async function aprovarLote(id){
   const lote=lotes.find(l=>l.id===id);if(!lote)return;
@@ -1444,22 +1522,22 @@ async function aprovarLote(id){
 }
 async function excluirLote(id){
   const lote=lotes.find(l=>l.id===id);if(!lote)return;
-  if(pedidos.some(p=>pedidoQtdNoLote(p,id)>0)){toast('Este lote tem pedidos vinculados e não pode ser excluído.');return}
+  if(pedidos.some(p=>pedidoQtdNoLote(p,id)>0)){toast('Este lote tem pedidos vinculados e nÃ£o pode ser excluÃ­do.');return}
   if(!confirm(`Excluir ${loteNome(lote)}?`))return;
   lotes=lotes.filter(l=>l.id!==id);
   await deleteRemote('lots',id);
-  await save();renderConfig();renderPedidos();toast('Lote excluído.');
+  await save();renderConfig();renderPedidos();toast('Lote excluÃ­do.');
 }
 
-// ── CSV ──
+// â”€â”€ CSV â”€â”€
 function exportCSV(){
   const allF=filterByPeriod(pedidos,'data');
   let csv='Cliente,Quantidade,Valor (R$),Status,Pagamento,Revendedor,Data Pedido,Data Pagamento,Obs\n';
   allF.forEach(p=>csv+=`"${p.cliente}",${p.qtd},${p.valor.toFixed(2)},"${p.status}","${pgtoLabel(p.pgto)}","${revName(p.rev)}","${fmtFull(p.data)}","${p.dataPago?fmtFull(p.dataPago):''}","${p.obs||''}"\n`);
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));a.download=`0v0_${periodo}.csv`;a.click();toast('✓ CSV exportado!');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));a.download=`0v0_${periodo}.csv`;a.click();toast('âœ“ CSV exportado!');
 }
 
-// ── INIT ──
+// â”€â”€ INIT â”€â”€
 async function initApp(){
   load();
   if(await loadRemote()){
@@ -1484,16 +1562,16 @@ function mostrarTutorialInstalacao(){
   const isIOS=/iphone|ipad|ipod/.test(ua);
   const isAndroid=/android/.test(ua);
   const steps=isIOS?[
-    'Toque no botão de compartilhar do Safari.',
-    'Escolha “Adicionar à Tela de Início”.',
-    'Confirme em “Adicionar”.'
+    'Toque no botÃ£o de compartilhar do Safari.',
+    'Escolha â€œAdicionar Ã  Tela de InÃ­cioâ€.',
+    'Confirme em â€œAdicionarâ€.'
   ]:isAndroid?[
-    'Toque nos três pontinhos do Chrome.',
-    'Escolha “Adicionar à tela inicial” ou “Instalar app”.',
-    'Confirme em “Adicionar”.'
+    'Toque nos trÃªs pontinhos do Chrome.',
+    'Escolha â€œAdicionar Ã  tela inicialâ€ ou â€œInstalar appâ€.',
+    'Confirme em â€œAdicionarâ€.'
   ]:[
     'Abra o menu do navegador.',
-    'Procure por “Instalar app” ou “Adicionar à tela inicial”.',
+    'Procure por â€œInstalar appâ€ ou â€œAdicionar Ã  tela inicialâ€.',
     'Confirme para criar o atalho.'
   ];
   document.getElementById('install-steps').innerHTML=steps.map((s,i)=>`<div class="install-step"><b>${i+1}</b><span>${s}</span></div>`).join('');
