@@ -634,6 +634,35 @@ const pedidoPago=p=>qtdPedido(p)>0&&qtdPagaPedido(p)>=qtdPedido(p);
 const pedidoEntregue=p=>qtdPedido(p)>0&&qtdEntreguePedido(p)>=qtdPedido(p);
 const pedidoConcluido=p=>pedidoPago(p)&&pedidoEntregue(p);
 const valorPagoPedido=p=>qtdPedido(p)?(Number(p.valor)||0)*(qtdPagaPedido(p)/qtdPedido(p)):0;
+function statusVisualPedido(p){
+  if(p.status==='solicitado')return 'solicitado';
+  if(p.status==='espera')return 'espera';
+  if(pedidoConcluido(p))return 'concluido';
+  const paga=qtdPagaPedido(p),entregue=qtdEntreguePedido(p);
+  if(pedidoEntregue(p))return 'entregue-pendente';
+  if(pedidoPago(p))return 'pago-pendente';
+  if(paga>0&&entregue>0)return 'parcial';
+  if(entregue>0)return 'entrega-parcial';
+  if(paga>0)return 'pagamento-parcial';
+  return 'pendente';
+}
+const statusVisualClasse=p=>({
+  solicitado:'sp-sol',espera:'sp-sol',pendente:'sp-ped',parcial:'sp-ped',
+  'entrega-parcial':'sp-ent','entregue-pendente':'sp-ent',
+  'pagamento-parcial':'sp-pag','pago-pendente':'sp-pag',concluido:'sp-pag'
+}[statusVisualPedido(p)]||'sp-ped');
+const statusVisualLabel=p=>({
+  solicitado:'Aguard. aprovação',espera:'Lista de espera',pendente:'Pendente',
+  parcial:'Parcial','entrega-parcial':'Entrega parcial',
+  'entregue-pendente':'Entregue, aguardando pagamento',
+  'pagamento-parcial':'Pagamento parcial',
+  'pago-pendente':'Pago, aguardando entrega',concluido:'Concluído'
+}[statusVisualPedido(p)]||'Pendente');
+const statusVisualStripe=p=>({
+  solicitado:'stripe-sol',espera:'stripe-sol',pendente:'stripe-ped',parcial:'stripe-ped',
+  'entrega-parcial':'stripe-ent','entregue-pendente':'stripe-ent',
+  'pagamento-parcial':'stripe-pag','pago-pendente':'stripe-pag',concluido:'stripe-pag'
+}[statusVisualPedido(p)]||'stripe-ped');
 function atualizarConclusao(p){
   if(pedidoConcluido(p)){p.status='pago';p.dataPago=p.dataPago||today();return}
   if(p.status==='pago'||p.status==='entregue')p.status='pedido';
@@ -979,7 +1008,6 @@ function renderPedidos(){
 
   if(!list.length){document.getElementById('pedidos-list').innerHTML='<div class="empty"><i class="ti ti-clipboard-off"></i><span>Nenhum pedido aqui</span></div>';return}
 
-  const stripeC=s=>({solicitado:'stripe-sol',pedido:'stripe-ped',entregue:'stripe-ent',pago:'stripe-pag'}[s]||'stripe-ped');
   const esperaTotal=list.reduce((s,p)=>s+(Number(p.qtd)||0),0);
   const esperaFixos=list.filter(isPedidoFixo).reduce((s,p)=>s+(Number(p.qtd)||0),0);
   const esperaInfo=filtro==='espera'?`<div class="notif"><i class="ti ti-package"></i><div class="wait-summary"><span>Lote esperado total</span><span class="wait-qty">${esperaTotal} qtd</span><span>Lote esperado fixos</span><span class="wait-qty">${esperaFixos} qtd</span></div></div>`:'';
@@ -989,7 +1017,7 @@ function renderPedidos(){
     const qtdPaga=qtdPagaPedido(p),qtdEnt=qtdEntreguePedido(p),qtdTotal=qtdPedido(p);
     return `<div class="pc" id="pc-${p.id}">
       <div class="pc-top" onclick="toggleCard(${p.id})">
-        <div class="pc-stripe ${stripeC(p.status)}"></div>
+        <div class="pc-stripe ${statusVisualStripe(p)}"></div>
         <div class="pc-main">
           <div class="pc-name">${p.cliente}</div>
           <div class="pc-sub">${p.qtd} qtd · ${fmtFull(p.data)}${is_admin?' · '+revName(p.rev):''}</div>
@@ -999,14 +1027,14 @@ function renderPedidos(){
           ${qtdEnt>0&&!pedidoEntregue(p)?`<span class="sp sp-ent">Ent ${qtdEnt}/${qtdTotal}</span>`:''}
           ${qtdPaga>0&&!pedidoPago(p)?`<span class="sp sp-pag">Pago ${qtdPaga}/${qtdTotal}</span>`:''}
           ${pedidoPago(p)&&!pedidoConcluido(p)?`<span class="sp sp-pag">Pago</span>`:''}
-          ${is_admin?`<div class="pc-val">${R$(p.valor)}</div>`:`<span class="sp ${spClass(p.status)}">${spLabel(p.status)}</span>`}
+          ${is_admin?`<div class="pc-val">${R$(p.valor)}</div>`:`<span class="sp ${statusVisualClasse(p)}">${statusVisualLabel(p)}</span>`}
           ${old?`<span class="pc-age">${diffDays(p.data)}d</span>`:`<i class="ti ti-chevron-down pc-chevron"></i>`}
         </div>
       </div>
       <div class="pc-detail">
         <div class="pd-divider"></div>
         <div class="pd-grid">
-          <div class="pd-item"><div class="pd-lbl">Status</div><div class="pd-val"><span class="sp ${spClass(p.status)}">${spLabel(p.status)}</span></div></div>
+          <div class="pd-item"><div class="pd-lbl">Status</div><div class="pd-val"><span class="sp ${statusVisualClasse(p)}">${statusVisualLabel(p)}</span></div></div>
           ${p.status==='espera'?`<div class="pd-item"><div class="pd-lbl">Lote esperado</div><div class="pd-val"><span class="wait-qty small">${p.qtd} qtd</span></div></div>`:''}
           ${is_admin?`<div class="pd-item"><div class="pd-lbl">Valor</div><div class="pd-val">${R$(p.valor)}${p.desconto?` <span style="font-size:11px;color:var(--t3)">(-${R$(p.desconto)})</span>`:''}</div></div>`:''}
           ${is_admin&&p.desconto?`<div class="pd-item"><div class="pd-lbl">Desconto</div><div class="pd-val">-${R$(p.desconto)}</div></div>`:''}
@@ -1367,9 +1395,9 @@ function renderHistorico(){
       <div class="sc" style="margin-bottom:12px"><div class="sc-l">Total gasto</div><div class="sc-v">${R$(total)}</div><div class="sc-sub">${list.length} pedidos</div></div>`;
     list.forEach(p=>{
       html+=`<div class="pago-card" style="border-color:var(--br)">
-        <div class="pago-dot" style="background:${p.status==='pago'?'var(--g)':p.status==='entregue'?'var(--b)':'#FCD34D'}"></div>
+        <div class="pago-dot" style="background:${pedidoConcluido(p)?'var(--g)':qtdEntreguePedido(p)>0?'var(--b)':'#FCD34D'}"></div>
         <div class="pago-body">
-          <div class="pago-nome">${fmtFull(p.data)} · <span class="sp ${spClass(p.status)}">${spLabel(p.status)}</span></div>
+          <div class="pago-nome">${fmtFull(p.data)} · <span class="sp ${statusVisualClasse(p)}">${statusVisualLabel(p)}</span></div>
           <div class="pago-meta">${p.qtd} qtd · ${pgtoLabel(p.pgto)} · ${revName(p.rev)}${p.obs?` · ${p.obs}`:''}</div>
         </div>
         <div class="pago-val">${R$(p.valor)}</div>
@@ -1415,7 +1443,7 @@ function abrirClientesPopup(cliente=null){
     const list=pedidos.filter(p=>p.cliente.toLowerCase()===n.toLowerCase()).slice().reverse();
     const total=list.reduce((s,p)=>s+p.valor,0);
     html+=`<div class="det-sub">${n}</div><div class="det-row"><span>Pedidos</span><strong>${list.length}</strong></div><div class="det-row"><span>Total</span><strong>${R$(total)}</strong></div>`;
-    list.slice(0,8).forEach(p=>html+=`<div class="pago-meta">${fmtFull(p.data)} · ${p.qtd} qtd · ${spLabel(p.status)} · ${revName(p.rev)}</div>`);
+    list.slice(0,8).forEach(p=>html+=`<div class="pago-meta">${fmtFull(p.data)} · ${p.qtd} qtd · ${statusVisualLabel(p)} · ${revName(p.rev)}</div>`);
   });
   if(!html)html='<div class="empty" style="padding:1.5rem"><i class="ti ti-users-off"></i><span>Nenhum cliente ainda</span></div>';
   document.getElementById('det-body').innerHTML=html;
