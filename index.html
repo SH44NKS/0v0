@@ -492,11 +492,11 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
     <input type="hidden" id="e-id">
     <div class="mf"><label>Nome do cliente</label><input type="text" id="e-nome"></div>
     <div class="mrow">
-      <div class="mf"><label>Quantidade</label><input type="number" id="e-qtd" min="1"></div>
+      <div class="mf"><label>Quantidade</label><input type="number" id="e-qtd" min="1" oninput="calcTotalEdit(true)"></div>
       <div class="mf"><label>Valor antes do desconto (R$)</label><input type="number" id="e-val" step="0.50" oninput="calcTotalEdit()"></div>
     </div>
     <div class="mf"><label>Pagamento</label>
-      <select id="e-pgto" onchange="calcTotalEdit()"><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="fiado">Fiado</option><option value="doacao">Doação</option></select>
+      <select id="e-pgto" onchange="calcTotalEdit(true)"><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="fiado">Fiado</option><option value="doacao">Doação</option></select>
     </div>
     <div class="mrow">
       <div class="mf"><label>Data</label><input type="date" id="e-data"></div>
@@ -676,6 +676,7 @@ function pedidoQtdNoLote(p,id){
   if(Array.isArray(p.lotesUsados)&&p.lotesUsados.length)return p.lotesUsados.filter(l=>Number(l.id)===Number(id)).reduce((s,l)=>s+(Number(l.qtd)||0),0);
   return Number(p.loteId)===Number(id)?p.qtd:0;
 }
+const loteDisponivelNaEdicao=(l,p)=>loteRest(l)+pedidoQtdNoLote(p,l.id);
 function pedidoLoteTexto(p){
   if(Array.isArray(p.lotesUsados)&&p.lotesUsados.length){
     return p.lotesUsados.map(a=>{
@@ -1119,10 +1120,13 @@ function calcTotal(){
   if(prev)prev.style.display=pgto==='fiado'?'':'none';
   document.getElementById('m-total').textContent=pgto==='doacao'?R$(0):R$(Math.max(0,q*PRECO-d)+entrega);
 }
-function calcTotalEdit(){
-  const base=parseFloat(document.getElementById('e-val')?.value)||0;
-  const d=parseFloat(document.getElementById('e-desc')?.value)||0;
+function calcTotalEdit(syncBase=false){
+  const qtd=parseInt(document.getElementById('e-qtd')?.value)||0;
+  const valInput=document.getElementById('e-val');
   const pgto=document.getElementById('e-pgto')?.value;
+  if(syncBase&&valInput)valInput.value=pgto==='doacao'?0:qtd*PRECO;
+  const base=parseFloat(valInput?.value)||0;
+  const d=parseFloat(document.getElementById('e-desc')?.value)||0;
   const entrega=document.getElementById('e-entrega')?.checked?TAXA_ENTREGA:0;
   const out=document.getElementById('e-total');
   if(out)out.textContent=pgto==='doacao'?R$(0):R$(Math.max(0,base-d)+entrega);
@@ -1229,7 +1233,7 @@ function openEdit(id){
   document.getElementById('e-data-prev-pagamento').value=p.dataPrevPagamento||'';
   document.getElementById('e-rev').innerHTML=users.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
   document.getElementById('e-rev').value=p.rev;
-  document.getElementById('e-lote').innerHTML='<option value="">Sem lote</option>'+lotes.map(l=>`<option value="${l.id}">${loteNome(l)} (${loteRest(l)} restantes)</option>`).join('');
+  document.getElementById('e-lote').innerHTML='<option value="">Sem lote</option>'+lotes.map(l=>`<option value="${l.id}">${loteNome(l)} (${loteDisponivelNaEdicao(l,p)} disponíveis)</option>`).join('');
   document.getElementById('e-lote').value=p.loteId||'';
   document.getElementById('e-obs').value=p.obs||'';
   calcTotalEdit();
@@ -1241,17 +1245,23 @@ async function salvarEdicao(){
   const nome=document.getElementById('e-nome').value.trim();
   const qtd=parseInt(document.getElementById('e-qtd').value)||0;
   const val=parseFloat(document.getElementById('e-val').value)||0;
-  p.pgto=document.getElementById('e-pgto').value;
-  if(!nome||qtd<=0||(p.pgto!=='doacao'&&val<=0)){toast('Preencha todos os campos.');return}
+  const pgto=document.getElementById('e-pgto').value;
+  if(!nome||qtd<=0||(pgto!=='doacao'&&val<=0)){toast('Preencha todos os campos.');return}
   if(remoteMode&&!orderPartialReady){toast('Execute a migração de pagamento parcial no Supabase.');return}
-  p.cliente=nome;p.qtd=qtd;
+  const status=document.getElementById('e-status').value;
+  const loteId=document.getElementById('e-lote').value;
+  const lote=loteId?lotes.find(l=>Number(l.id)===Number(loteId)):null;
+  if(lote&&!['solicitado','espera'].includes(status)&&qtd>loteDisponivelNaEdicao(lote,p)){
+    toast(`O lote selecionado permite no máximo ${loteDisponivelNaEdicao(lote,p)} unidades.`);
+    return;
+  }
+  p.cliente=nome;p.qtd=qtd;p.pgto=pgto;
   p.data=document.getElementById('e-data').value||today();
-  p.status=document.getElementById('e-status').value;
+  p.status=status;
   p.desconto=parseFloat(document.getElementById('e-desc').value)||0;
   p.taxaEntrega=document.getElementById('e-entrega').checked&&p.pgto!=='doacao'?TAXA_ENTREGA:0;
   p.valor=p.pgto==='doacao'?0:Math.max(0,val-p.desconto)+p.taxaEntrega;
   p.rev=document.getElementById('e-rev').value||p.rev;
-  const loteId=document.getElementById('e-lote').value;
   p.loteId=loteId?Number(loteId):null;p.lotesUsados=null;
   p.qtdPaga=Math.min(qtd,Math.max(0,parseInt(document.getElementById('e-qtd-paga').value)||0));
   p.qtdEntregue=Math.min(qtd,Math.max(0,parseInt(document.getElementById('e-qtd-entregue').value)||0));
