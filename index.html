@@ -193,7 +193,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--fb);color:var(--t);
 .slabel{font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0;margin:16px 0 8px}
 
 /* PAGOS */
-.pago-card{background:var(--s);border:1px solid var(--br);border-radius:var(--rl);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;min-width:0}
+.pago-card{background:var(--s);border:1px solid var(--br);border-radius:var(--rl);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
 .pago-dot{width:8px;height:8px;border-radius:50%;background:var(--g);flex-shrink:0}
 .pago-body{flex:1;min-width:0}
 .pago-nome{font-size:14px;font-weight:600;font-family:var(--fh);color:var(--t)}
@@ -1053,6 +1053,8 @@ function renderPedidos(){
         ${is_admin?`<div class="pd-acts">
           ${!pedidoEntregue(p)&&['pedido','entregue'].includes(p.status)?`<button class="pd-act blue" onclick="setStatus(${p.id},'entregue')"><i class="ti ti-truck"></i>Entregue</button>`:''}
           ${!pedidoPago(p)&&['pedido','entregue'].includes(p.status)?`<button class="pd-act green" onclick="setStatus(${p.id},'pago')"><i class="ti ti-coin"></i>Pago</button>`:''}
+          ${qtdPaga>0?`<button class="pd-act" onclick="resetBaixa(${p.id},'pago')"><i class="ti ti-arrow-back-up"></i>Desfazer pago</button>`:''}
+          ${qtdEnt>0?`<button class="pd-act" onclick="resetBaixa(${p.id},'entregue')"><i class="ti ti-arrow-back-up"></i>Desfazer entrega</button>`:''}
           <button class="pd-act" onclick="openEdit(${p.id})"><i class="ti ti-pencil"></i>Editar</button>
           <button class="pd-act danger" onclick="excluir(${p.id})"><i class="ti ti-trash"></i>Excluir</button>
         </div>`:''}
@@ -1088,6 +1090,16 @@ async function setStatus(id,s){
   }
   atualizarConclusao(p);
   await save();renderPedidos();renderPagos();renderResumo();toast(s==='pago'?'✓ Marcado como pago':'✓ Marcado como entregue');
+}
+async function resetBaixa(id,tipo){
+  const p=pedidos.find(x=>x.id===id);if(!p)return;
+  if(curUser.role!=='admin'){toast('Somente o admin pode corrigir baixas.');return}
+  const label=tipo==='pago'?'pagamento':'entrega';
+  if(!confirm(`Desfazer a baixa de ${label} deste pedido?`))return;
+  if(tipo==='pago'){p.qtdPaga=0;p.dataPago=null}
+  if(tipo==='entregue')p.qtdEntregue=0;
+  atualizarConclusao(p);
+  await save();renderPedidos();renderPagos();renderResumo();renderHistorico();toast(`Baixa de ${label} removida.`);
 }
 async function aprovarPedido(id){
   if(curUser.role!=='admin')return;
@@ -1307,6 +1319,9 @@ function renderPagos(){
   });
   document.getElementById('pagos-list').innerHTML=html;
   if(is_admin)[...document.querySelectorAll('#pagos-list .pago-card')].forEach((card,i)=>{
+    const undo=document.createElement('button');
+    undo.className='role-btn';undo.textContent='Desfazer pago';undo.onclick=()=>resetBaixa(list[i].id,'pago');
+    card.appendChild(undo);
     const btn=document.createElement('button');
     btn.className='role-btn admin';btn.textContent='Editar';btn.onclick=()=>openEdit(list[i].id);
     card.appendChild(btn);
